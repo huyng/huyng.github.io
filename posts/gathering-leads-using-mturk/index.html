@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Gathering Leads using MTurk &laquo; Searching Gradients with Huy</title>
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" href="/atom.xml" />
+    <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/syntax.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css">
+    <!-- <link href="https://fonts.googleapis.com/css?family=Lora&display=swap" rel="stylesheet"> -->
+    <link href="https://fonts.googleapis.com/css?family=Lora|Rock+Salt&display=swap" rel="stylesheet">
+
+
+
+
+    <!-- fonts -->
+    <link href="//netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
+
+    <!-- javascript -->
+    <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
+
+    <!-- google analytics -->
+    <script type="text/javascript">
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-6813218-1']);
+        _gaq.push(['_trackPageview']);
+
+        // count visits longer than 15 secs as
+        setTimeout("_gaq.push(['_trackEvent', '15_seconds', 'read'])", 15000);
+
+        (function () {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+
+</head>
+
+<body>
+    <div class="container">
+        <br>
+        <div class="site-title"><a href="/">Searching Gradients</a></div>
+        <br>
+        <div id="nav-container">
+            <ul class="nav" style="width:100%;">
+                <li><a href="/">
+                        <span style="color:#444"><i class="icon-align-justify icon-medium"></i></span>
+                        posts</a></li>
+                <li><a href="https://everyhue.me/">
+                        <span style="color:#444"><i class="icon-gamepad icon-medium"></i></span>
+                        about</a></li>
+                <li class="social-media-nav">
+                    <a id="twitter" href="http://twitter.com/huyng">
+                        <span style="color:#444"><i class="icon-twitter icon-medium"></i></span>
+                        twitter
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="github" href="https://github.com/huyng">
+                        <span style="color:#444"><i class="icon-github icon-medium"></i></span>
+                        github
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="rss" href="/atom.xml">
+                        <span style="color:#444"><i class="icon-rss-sign icon-medium"></i></span>
+                        feed
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="clear"></div>
+
+        <br>
+        <center>
+            <img src="/static/images/welder.jpg" alt="Header photo - welder" width="100%" />
+        </center>
+
+        <div id="content-container">
+            <!-- POST -->
+
+<br>
+<br>
+<!-- <div class="header-rule"></div> -->
+<div class="post content">
+    <div class="post-date">13 Jun 2010</div><br><br>
+
+    
+    <h2 class="post-title"><a href="/posts/gathering-leads-using-mturk/">Gathering Leads using MTurk</a></h2>
+
+    <br>
+    <div class="post-content">
+    <!-- End Meta -->
+<p>I want to share a technique with you that I have been using to streamline my <a href="http://steveblank.com/category/customer-development/">customer development</a> process. It's experimental, but so far it's saving me a lot of time and producing good results. </p>
+<p>At the core, my technique involves using MTurk to collect targeted leads for some business ideas that have been brewing in my head. By using MTurk I was able to gather contact information from a huge list of websites in a very little amount of time. Sure, I could've written a scraper to find emails on most of these sites, but after weighing the cost/benefit ratio, I figured it just wasn't worth my time.</p>
+<!--more-->
+<h3>The Task</h3>
+<p>To give you some context, I had a list of around 2000 urls pointing to local chamber of commerce sites scattered across the United States. Quite a few of my business ideas involve these organizations, so I wanted to <a href="http://steveblank.com/category/customer-development/">validate</a>/gauge interest by sending out targeted email inquiries to each organization's leader. </p>
+<p>For those of you unfamiliar with MTurk, it is a crowd-sourcing service from Amazon that allows you to submit small, well-defined tasks to thousands of people around the world. You basically construct a HTML form with a special templating syntax and then submit a CSV file that will populate into that form when Amazon displays it to their crowd of workers. </p>
+<p>You can see a sample of the task that I created below. </p>
+<p><img alt="mturk preview" src="/media/3000/mturk_preview.png" /></p>
+<p>Aside: I generated the above form using <a href="http://shpaml.webfactional.com/">Shpaml</a> which I highly recommend for writing short-hand HTML. It significantly cut down on my typing and development time.</p>
+<h3>The Results</h3>
+<p>I ran a test trial using 100 urls. The task was set up so that every url would be sent to at least 3 workers. In total, 300 turkers worked on my task. On Sunday morning I had submitted the task to Amazon Mturk. When I came back 4 hours later, it was already completed! Although there were a few spammers, the overall quality was great for what I was trying to achieve. Check out a small sample of <a href="http://www.huyng.com/wp-content/uploads/mtruk_results.csv_.zip">my mturk results</a>.</p>
+<p>Out of the batch of 300, fourty of the answers came from spammers. I know that 13 percent sounds like a lot! However, since I had 3 workers work on each URL, I quickly filtered out the spam by accepting only the answers where two or more mturkers intersected.</p>
+
+<script>utmx_section("emailme")</script>
+<p>For those of you trying to capture the local marketplace, or even if you're just interested in getting this data, send me a <a href="/about/">quick email</a>! I will be running through the rest of my batch in the upcoming days.</p></noscript>
+
+    </div>
+
+    <br>
+    <br>
+
+    <div class="pitch">
+        Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
+    </div>
+
+    <br>
+    <br>
+    <br>
+
+    <!-- related posts -->
+    <div id="related">
+        <h3>Related Posts</h3>
+            
+            <div class="related-post">
+              <div class="related-post-date">26 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-with-vantage-point-trees/">Similarity search 101 - Part 2 (search with vp-trees)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">19 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-part-1/">Similarity search 101 - Part 1 (overview)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">14 Dec 2013</div>
+              <div class="related-post-title"><a href="/posts/faster-numpy-dot-product/">Faster Numpy Dot Product for Multi-dimensional Arrays</a></div>
+              <div class="clear"></div>
+            </div>
+            
+        </table>
+    </div>
+    <br> <br> <br>
+
+</div>
+
+<div class="header-rule"></div>
+<div class="content">
+
+
+    <!-- discussion -->
+    
+
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        var disqus_shortname = 'huyng';
+        var disqus_identifier = '583 http://www.huyng.com/?p=583';
+        var disqus_url = 'http://www.huyng.com/posts/gathering-leads-using-mturk/';
+
+        
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+        
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    
+
+</div>
+<!-- /POST -->
+        </div><!-- /content-container -->
+        <div class="clear"></div>
+        <br>
+        <br>
+        <br>
+    </div>
+
+
+    <!-- SCRIPTS -->
+    <script type="text/javascript"
+        src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="/static/bower_components/pixastic/pixastic.custom.js"></script>
+
+    <!-- colorbox -->
+    <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $(".post-content p img")
+                .colorbox({
+                    // no transition
+                    transition: "none",
+
+                    // use image src as href
+                    href: function () {
+                        return this.getAttribute('src');
+                    },
+
+                    title: function () {
+                        return this.getAttribute('alt');
+                    },
+
+
+                    // slightly dark bg
+                    opacity: 1,
+
+                    // set max widths x height
+                    scalePhotos: true,
+                    maxWidth: "85%",
+                    maxHeight: "80%",
+
+                    // make it so overlay is fixed
+                    fixed: true,
+
+                    // group photos in posts
+                    rel: "gallery"
+                });
+        });
+    </script>
+
+    <!-- page specific scripts -->
+    
+
+    
+</body>
+
+</html>

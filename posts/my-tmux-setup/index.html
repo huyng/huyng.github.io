@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>My Tmux Setup &laquo; Searching Gradients with Huy</title>
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" href="/atom.xml" />
+    <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/syntax.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css">
+    <!-- <link href="https://fonts.googleapis.com/css?family=Lora&display=swap" rel="stylesheet"> -->
+    <link href="https://fonts.googleapis.com/css?family=Lora|Rock+Salt&display=swap" rel="stylesheet">
+
+
+
+
+    <!-- fonts -->
+    <link href="//netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
+
+    <!-- javascript -->
+    <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
+
+    <!-- google analytics -->
+    <script type="text/javascript">
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-6813218-1']);
+        _gaq.push(['_trackPageview']);
+
+        // count visits longer than 15 secs as
+        setTimeout("_gaq.push(['_trackEvent', '15_seconds', 'read'])", 15000);
+
+        (function () {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+
+</head>
+
+<body>
+    <div class="container">
+        <br>
+        <div class="site-title"><a href="/">Searching Gradients</a></div>
+        <br>
+        <div id="nav-container">
+            <ul class="nav" style="width:100%;">
+                <li><a href="/">
+                        <span style="color:#444"><i class="icon-align-justify icon-medium"></i></span>
+                        posts</a></li>
+                <li><a href="https://everyhue.me/">
+                        <span style="color:#444"><i class="icon-gamepad icon-medium"></i></span>
+                        about</a></li>
+                <li class="social-media-nav">
+                    <a id="twitter" href="http://twitter.com/huyng">
+                        <span style="color:#444"><i class="icon-twitter icon-medium"></i></span>
+                        twitter
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="github" href="https://github.com/huyng">
+                        <span style="color:#444"><i class="icon-github icon-medium"></i></span>
+                        github
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="rss" href="/atom.xml">
+                        <span style="color:#444"><i class="icon-rss-sign icon-medium"></i></span>
+                        feed
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="clear"></div>
+
+        <br>
+        <center>
+            <img src="/static/images/welder.jpg" alt="Header photo - welder" width="100%" />
+        </center>
+
+        <div id="content-container">
+            <!-- POST -->
+
+<br>
+<br>
+<!-- <div class="header-rule"></div> -->
+<div class="post content">
+    <div class="post-date">21 Aug 2013</div><br><br>
+
+    
+    <h2 class="post-title"><a href="/posts/my-tmux-setup/">My Tmux Setup</a></h2>
+
+    <br>
+    <div class="post-content">
+    <p>If you do a lot of context switching between projects, recreating your terminal
+environment &amp; window layout can easily eat up hours of your day. Here’s a quick tip
+to help you create and manage persistent terminal workspaces so that with a
+few keystrokes, you can jump straight back into whatever you were working on
+as quickly as possible.</p>
+
+<h5 id="how-it-works">How it works</h5>
+
+<p>The whole idea behind this setup is to make it so you will have 1) The ability to name your
+terminal workspaces with easily memorizable names and 2) the  ability to keep persistent terminal workspaces running
+even if you’ve closed your terminal window.</p>
+
+<p>All of this is achieved with the following shell script which we’ll configure <a href="http://www.iterm2.com/">iTerm2</a> to execute
+anytime you open a new window.</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#!/bin/sh</span>
+<span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:/usr/local/bin
+
+<span class="c"># abort if we're already inside a TMUX session</span>
+<span class="o">[</span> <span class="s2">"</span><span class="nv">$TMUX</span><span class="s2">"</span> <span class="o">==</span> <span class="s2">""</span> <span class="o">]</span> <span class="o">||</span> <span class="nb">exit </span>0
+
+<span class="c"># startup a "default" session if none currently exists</span>
+tmux has-session <span class="nt">-t</span> _default <span class="o">||</span> tmux new-session <span class="nt">-s</span> _default <span class="nt">-d</span>
+
+<span class="c"># present menu for user to choose which workspace to open</span>
+<span class="nv">PS3</span><span class="o">=</span><span class="s2">"Please choose your session: "</span>
+<span class="nv">options</span><span class="o">=(</span><span class="si">$(</span>tmux list-sessions <span class="nt">-F</span> <span class="s2">"#S"</span><span class="si">)</span> <span class="s2">"NEW SESSION"</span> <span class="s2">"BASH"</span><span class="o">)</span>
+<span class="nb">echo</span> <span class="s2">"Available sessions"</span>
+<span class="nb">echo</span> <span class="s2">"------------------"</span>
+<span class="nb">echo</span> <span class="s2">" "</span>
+<span class="k">select </span>opt <span class="k">in</span> <span class="s2">"</span><span class="k">${</span><span class="nv">options</span><span class="p">[@]</span><span class="k">}</span><span class="s2">"</span>
+<span class="k">do
+    case</span> <span class="nv">$opt</span> <span class="k">in</span>
+        <span class="s2">"NEW SESSION"</span><span class="p">)</span>
+            <span class="nb">read</span> <span class="nt">-p</span> <span class="s2">"Enter new session name: "</span> SESSION_NAME
+            tmux new <span class="nt">-s</span> <span class="s2">"</span><span class="nv">$SESSION_NAME</span><span class="s2">"</span>
+            <span class="nb">break</span>
+            <span class="p">;;</span>
+        <span class="s2">"BASH"</span><span class="p">)</span>
+            bash <span class="nt">--login</span>
+            <span class="nb">break</span><span class="p">;;</span>
+        <span class="k">*</span><span class="p">)</span>
+            tmux attach-session <span class="nt">-t</span> <span class="nv">$opt</span>
+            <span class="nb">break</span>
+            <span class="p">;;</span>
+    <span class="k">esac</span>
+<span class="k">done</span></code></pre></figure>
+
+<h5 id="setting-it-up">Setting it up</h5>
+
+<p>First off, place the above script in a location that’s accessible to <a href="http://www.iterm2.com/">iTerm2</a> (I usually place it in ~/.dotfiles/tmux.start.sh).</p>
+
+<p>Then open up iTerm2’s terminal preferences and have it execute this script anytime you open a new window:</p>
+
+<p><img src="/media/3012/iterm2config.jpg" alt="iterm2config" /></p>
+
+<h5 id="usage">Usage</h5>
+
+<p>Once you’ve done all the above, everytime you open a new window, you’ll be prompted to choose which previous
+workspace you want to join.</p>
+
+<p><img src="/media/3012/newsession.jpg" alt="newsession" /></p>
+
+<p>You’ll also have the opportunity to create new work spaces by choosing <em>NEW SESSION</em>. Or if you don’t want to open a
+full blown tmux session, you can choose to just open up a BASH prompt. All of these sessions are persistent. So if you
+decide to close your terminal window, they will remain active in the background and ready for you to rejoin at a later
+point in time.</p>
+
+
+    </div>
+
+    <br>
+    <br>
+
+    <div class="pitch">
+        Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
+    </div>
+
+    <br>
+    <br>
+    <br>
+
+    <!-- related posts -->
+    <div id="related">
+        <h3>Related Posts</h3>
+            
+            <div class="related-post">
+              <div class="related-post-date">26 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-with-vantage-point-trees/">Similarity search 101 - Part 2 (search with vp-trees)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">19 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-part-1/">Similarity search 101 - Part 1 (overview)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">14 Dec 2013</div>
+              <div class="related-post-title"><a href="/posts/faster-numpy-dot-product/">Faster Numpy Dot Product for Multi-dimensional Arrays</a></div>
+              <div class="clear"></div>
+            </div>
+            
+        </table>
+    </div>
+    <br> <br> <br>
+
+</div>
+
+<div class="header-rule"></div>
+<div class="content">
+
+
+    <!-- discussion -->
+    
+
+</div>
+<!-- /POST -->
+        </div><!-- /content-container -->
+        <div class="clear"></div>
+        <br>
+        <br>
+        <br>
+    </div>
+
+
+    <!-- SCRIPTS -->
+    <script type="text/javascript"
+        src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="/static/bower_components/pixastic/pixastic.custom.js"></script>
+
+    <!-- colorbox -->
+    <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $(".post-content p img")
+                .colorbox({
+                    // no transition
+                    transition: "none",
+
+                    // use image src as href
+                    href: function () {
+                        return this.getAttribute('src');
+                    },
+
+                    title: function () {
+                        return this.getAttribute('alt');
+                    },
+
+
+                    // slightly dark bg
+                    opacity: 1,
+
+                    // set max widths x height
+                    scalePhotos: true,
+                    maxWidth: "85%",
+                    maxHeight: "80%",
+
+                    // make it so overlay is fixed
+                    fixed: true,
+
+                    // group photos in posts
+                    rel: "gallery"
+                });
+        });
+    </script>
+
+    <!-- page specific scripts -->
+    
+
+    
+</body>
+
+</html>

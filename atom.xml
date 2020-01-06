@@ -1,0 +1,1020 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+ <title>Searching Gradients with Huy Nguyen</title>
+ <link href="http://blog.everyhue.me/atom.xml" rel="self"/>
+ <link href="http://blog.everyhue.me/"/>
+ <updated>2020-01-06T13:22:20-08:00</updated>
+ <id>http://blog.everyhue.me/</id>
+ <author>
+   <name>Huy Nguyen</name>
+ </author>
+
+ 
+ <entry>
+   <title>Similarity search 101 - Part 2 (search with vp-trees)</title>
+   <link href="http://blog.everyhue.me/posts/similarity-search-101-with-vantage-point-trees/"/>
+   <updated>2014-03-26T00:00:00-07:00</updated>
+   <id>http://blog.everyhue.me/posts/similarity-search-101-with-vantage-point-trees</id>
+   
+
+   <content type="html">&lt;blockquote&gt;
+  &lt;p&gt;This is the 2nd article in a two part series on similarity search. See &lt;a href=&quot;/posts/similarity-search-101-part-1/&quot;&gt;&lt;strong&gt;part 1&lt;/strong&gt;&lt;/a&gt; for an overview of the subject.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;In this second installment of my series on similarity search we’ll figure out how to improve on the speed and efficiency of querying our database for nearest neighbors using a data structure known as a “vantage point tree”.&lt;/p&gt;
+
+&lt;p&gt;We previously used a brute force approach by computing pairwise distances between our query and all points in our dataset so that we could find items that were close to it.&lt;/p&gt;
+
+&lt;p&gt;Unfortunately, this technique scales in &lt;script type=&quot;math/tex&quot;&gt;O( \# examples \times \# features)&lt;/script&gt; time which is prohibitively expensive on even modestly sized datasets.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://en.wikipedia.org/wiki/K-d_tree&quot;&gt;Kd-trees&lt;/a&gt;, and more recently &lt;a href=&quot;https://en.wikipedia.org/wiki/Vantage-point_tree&quot;&gt;vantage point trees&lt;/a&gt; (a.k.a vp-trees), have gained popularity within the machine learning community for their efficacy in reducing the computational cost of similarity search over large datasets.&lt;/p&gt;
+
+&lt;p&gt;For this article, we’ll focus on examining how a vp-tree works.&lt;/p&gt;
+
+&lt;h3 id=&quot;what-is-a-vantage-point-tree-and-how-do-we-construct-one&quot;&gt;What is a vantage point tree and how do we construct one?&lt;/h3&gt;
+
+&lt;p&gt;In a nutshell, a vantage point tree structure allows us to store the elements of our dataset in such a way that during query time, we can quickly exclude from examination large portions of our data without having to perform any distance computations on the elments of that excluded portions.&lt;/p&gt;
+
+&lt;p&gt;Let’s take a look at the basic structure of a vp-tree because it will allow us to understand how we can prune data from a search at query time.&lt;/p&gt;
+
+&lt;p&gt;By definition, each node in a vp-tree stores at a minimum 5 pieces of information:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;A list of elements sampled from our dataset&lt;/li&gt;
+  &lt;li&gt;A vantage point element chosen randomly from the list of elements above&lt;/li&gt;
+  &lt;li&gt;A distance called &lt;em&gt;mu&lt;/em&gt;&lt;/li&gt;
+  &lt;li&gt;A “left” child node&lt;/li&gt;
+  &lt;li&gt;A “right” child node&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;I’ll explain soon how all of these compoenents relate, but in the meantime here’s an illustration of the vp-tree concept:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/media/3016/vptree.png&quot; alt=&quot;vantage point tree&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;At the root node of our tree, the list of elements consists of &lt;em&gt;every&lt;/em&gt; single item in our data set. From this list of items, we choose one element and designate it as our &lt;em&gt;vangate point&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;To choose &lt;script type=&quot;math/tex&quot;&gt;mu&lt;/script&gt;, we compute the median distance between our vantage point &lt;script type=&quot;math/tex&quot;&gt;vp&lt;/script&gt; and all other elements &lt;script type=&quot;math/tex&quot;&gt;P&lt;/script&gt; in the current node .&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;mu = median(\ dist(vp, p)\ )\ \ \ \forall p \in P&lt;/script&gt;
+
+&lt;p&gt;We select all points within a distance &lt;script type=&quot;math/tex&quot;&gt;mu&lt;/script&gt; from the vantage point to assign elements to the &lt;em&gt;left child node&lt;/em&gt;.  And similarly, we can assign all points outside of &lt;script type=&quot;math/tex&quot;&gt;mu&lt;/script&gt; to the &lt;em&gt;right child node&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/media/3016/left_right_child.png&quot; alt=&quot;elements for left and right child&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Since &lt;script type=&quot;math/tex&quot;&gt;mu&lt;/script&gt; is the median distance between the vantage point and all other points, this procedure effectively divides into half the elements we assign to the left and right child nodes.&lt;/p&gt;
+
+&lt;p&gt;Finally, to construct the rest of the tree, we recursively follow this same procedure for each child node, until there are no more elements to assign to child nodes.&lt;/p&gt;
+
+&lt;p&gt;Here is some pseudo code to build the tree:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;VPNode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;elements&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;left_child&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;right_child&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;mu&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;build_vp_tree&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;elements&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;VPNode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;select_random&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;elements&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mu&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;median&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;distance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;elements&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;left_elements&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;e&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;elements&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;where&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;distance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mu&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;right_elements&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;e&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;elements&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;where&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;distance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mu&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;left_child&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;build_vp_tree&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;left_elements&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;right_child&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;build_vp_tree&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;right_elements&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h3 id=&quot;nearest-neighbor-search-with-the-vantage-point-tree&quot;&gt;Nearest neighbor search with the vantage point tree&lt;/h3&gt;
+
+&lt;p&gt;For a dataset encoded as a vantage point tree and a query point &lt;script type=&quot;math/tex&quot;&gt;q&lt;/script&gt;, how can we find the closest &lt;script type=&quot;math/tex&quot;&gt;k&lt;/script&gt; points in our dataset without running distance computations for every single element?&lt;/p&gt;
+
+&lt;p&gt;One approach we could take is to say that for every &lt;script type=&quot;math/tex&quot;&gt;q&lt;/script&gt; there is some threshold distance &lt;script type=&quot;math/tex&quot;&gt;tau&lt;/script&gt; where &lt;em&gt;all&lt;/em&gt; of its closest &lt;script type=&quot;math/tex&quot;&gt;k&lt;/script&gt; neighbors are contained within this threshold. You can imagine this area as an enclsosed circle as depcited below:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/media/3016/querypoint.png&quot; alt=&quot;query point and tau&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;There are three scenarios for how this query-tau area can relate to any node within our vantage point tree.&lt;/p&gt;
+
+&lt;h5 id=&quot;pruning-the-left-child-node&quot;&gt;Pruning the left child node&lt;/h5&gt;
+
+&lt;p&gt;The first scenario is if the area lies &lt;em&gt;completely&lt;/em&gt; outside of our vantage-point-mu radius as depicted below. If this is the case, we can safely assume that if we are to find &lt;script type=&quot;math/tex&quot;&gt;q&lt;/script&gt;’s nearest neighbors we can forego looking in our node’s left child, which contains all elements within the mu radius of this vantage point.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/media/3016/disjoint_vp_q.png&quot; alt=&quot;query-tau and vp-mu areas are disjoint&quot; /&gt;&lt;/p&gt;
+
+&lt;h5 id=&quot;pruning-the-right-child-node&quot;&gt;Pruning the right child node&lt;/h5&gt;
+
+&lt;p&gt;The next scenario is when the query-tau area lies &lt;em&gt;completely&lt;/em&gt; inside the bounds of the vantage point’s mu-radius (see below). In this case, we can ignore all points outside of &lt;script type=&quot;math/tex&quot;&gt;mu&lt;/script&gt; which we had conveniently assigned to the right child node.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/media/3016/union_vp_q.png&quot; alt=&quot;query-tau and vp-mu areas are disjoint&quot; /&gt;&lt;/p&gt;
+
+&lt;h5 id=&quot;worst-case-we-check-both-left-and-right-child-nodes&quot;&gt;Worst case, we check both left and right child nodes&lt;/h5&gt;
+
+&lt;p&gt;What happens when the query-tau area partially intersects with our node’s vantage point’s mu-radius?&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/media/3016/intersect_vp_q.png&quot; alt=&quot;query-tau and vp-mu areas partially intersect&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In this scenario, we can’t say whether the right or left child contains the nearest neighbors, so we have to search both nodes.&lt;/p&gt;
+
+&lt;h5 id=&quot;traversing-the-tree-to-find-nearest-neighbors&quot;&gt;Traversing the tree to find nearest neighbors&lt;/h5&gt;
+
+&lt;p&gt;To summarize, when the query threshold area is &lt;em&gt;completely&lt;/em&gt; outside the bounds of our node’s vantage-point mu boundary, we can exclude or “prune” the left child node from our search space. When the query threshold is &lt;em&gt;completely&lt;/em&gt; inside the bounds of vantage-point mu boundary, we cans safely ignore the right child node. And finally when neither is the case, we must search both left and right child nodes.&lt;/p&gt;
+
+&lt;p&gt;Now that we know how to behave when examining a single node, we can use this knowledge to find &lt;script type=&quot;math/tex&quot;&gt;q&lt;/script&gt;’s nearest neighbors by recursively shrinking &lt;script type=&quot;math/tex&quot;&gt;tau&lt;/script&gt; as we search down the vantage point tree.&lt;/p&gt;
+
+&lt;p&gt;More concretely, we initialize &lt;script type=&quot;math/tex&quot;&gt;tau&lt;/script&gt; to be infinity. And as we traverse from the root node to each child node of the vp-tree, we set &lt;script type=&quot;math/tex&quot;&gt;tau&lt;/script&gt; to be equal to the lesser of the distance from &lt;script type=&quot;math/tex&quot;&gt;q&lt;/script&gt; to &lt;script type=&quot;math/tex&quot;&gt;vp&lt;/script&gt; or any previously seen &lt;script type=&quot;math/tex&quot;&gt;tau&lt;/script&gt;.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;find_nearest_neighbors&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tree&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;k&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;&quot;&quot;&quot;
+    tree = the VP tree
+    k    = # of nearest neighbors you wanted to find
+    q    = query point
+    &quot;&quot;&quot;&lt;/span&gt;
+
+    &lt;span class=&quot;n&quot;&gt;tau&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;infinity&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;nodes_to_visit&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tree&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;# fixed size array for nearest neightbors
+&lt;/span&gt;    &lt;span class=&quot;c1&quot;&gt;# sorted from closest to farthest neighbor
+&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;neighbors&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PriorityQueue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;k&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nodes_to_visit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nodes_to_visit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;popleft&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;distance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tau&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;c1&quot;&gt;# store node.vp as a neighbor if it's closer than any other point
+&lt;/span&gt;            &lt;span class=&quot;c1&quot;&gt;# seen so far
+&lt;/span&gt;            &lt;span class=&quot;n&quot;&gt;neighbors&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+            &lt;span class=&quot;c1&quot;&gt;# shrink tau
+&lt;/span&gt;            &lt;span class=&quot;n&quot;&gt;farthest_nearest_neighbor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;neighbors&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;tau&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;distance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;farthest_nearest_neighbor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+        &lt;span class=&quot;c1&quot;&gt;# check for intersection between q-tau and vp-mu regions
+&lt;/span&gt;        &lt;span class=&quot;c1&quot;&gt;# and see which branches we absolutely must search
+&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mu&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mu&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tau&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;nodes_to_visit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;left_child&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mu&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tau&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;nodes_to_visit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;right_child&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mu&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tau&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;nodes_to_visit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;right_child&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mu&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tau&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;nodes_to_visit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;left_child&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;neighbors&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Here is the full source code for my &lt;a href=&quot;https://github.com/huyng/algorithms/tree/master/vptree&quot;&gt;python implementation of a vantage point tree&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h5 id=&quot;references&quot;&gt;references&lt;/h5&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;a href=&quot;http://www.cs.iastate.edu/~honavar/nndatastructures.pdf&quot;&gt;Data Structures and Algorithms for Nearest Neighbor Search in Metric Space&lt;/a&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;a href=&quot;http://www1.cs.columbia.edu/CAVE/publications/pdfs/Kumar_ECCV08_2.pdf&quot;&gt;What is a Good Nearest Neighbors Algorithm
+for Finding Similar Patches in Images?&lt;/a&gt;&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+</content>
+
+ </entry>
+ 
+ <entry>
+   <title>Similarity search 101 - Part 1 (overview)</title>
+   <link href="http://blog.everyhue.me/posts/similarity-search-101-part-1/"/>
+   <updated>2014-03-19T00:00:00-07:00</updated>
+   <id>http://blog.everyhue.me/posts/similarity-search-101-part-1</id>
+   
+
+   <content type="html">&lt;p&gt;In my work applying machine learning technologies, finding “similar” items is  one of the most common challenges that people come to my team with:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;“Can you find me the image that looks like this other image?”&lt;/li&gt;
+  &lt;li&gt;“Which webpage is similar to this webpage?”&lt;/li&gt;
+  &lt;li&gt;“Which song matches this audio clip I’ve recorded?”&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;To more formally define the &lt;em&gt;similarity task&lt;/em&gt;, let’s assume we have a big database of items. Solving the this task means that when we are given a new item – let’s call it the &lt;em&gt;query&lt;/em&gt; – our algorithm is able to locate within the database the closest or most similar items to the query.&lt;/p&gt;
+
+&lt;p&gt;Whether we’re dealing with pictures, audio clips, faces, documents, or DNA sequences, we can approach solving this problem using a common framework which I briefly summarize below.&lt;/p&gt;
+
+&lt;h3 id=&quot;feature-extraction&quot;&gt;Feature extraction&lt;/h3&gt;
+
+&lt;p&gt;First we need to know how to “represent” each item in our data set as a series of numbers. This process is often called “feature extraction” or “feature representation”.&lt;/p&gt;
+
+&lt;p&gt;There is a large field of research focused on finding good feature representations for all kinds of data. And while it may not yield the most optimal results in terms of discounting noise in our data, we can take the raw signals themselves and convert them verbatim into our “feature vector” as a first step in building our similarity search engine.&lt;/p&gt;
+
+&lt;p&gt;So for example, if our dataset is made up of 16 x 16 gray scale images, we would take the pixel value of each row and store them as an array of 256 numbers.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/media/3015/extract-features.png&quot; alt=&quot;feature extraction&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;defining-a-similarity-metric&quot;&gt;Defining a similarity metric&lt;/h3&gt;
+
+&lt;p&gt;Once we have a feature vector for every item in our dataset, we need a way of comparing one feature vector to another feature vector. If we view each feature vector as a point in some n-dimensional space, one can use the euclidean distance between two points &lt;script type=&quot;math/tex&quot;&gt;p&lt;/script&gt; and &lt;script type=&quot;math/tex&quot;&gt;q&lt;/script&gt; as a similarity metric:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;distance = \sqrt{\sum_{i=1}^n (q_i-p_i)^2}&lt;/script&gt;
+
+&lt;h3 id=&quot;brute-force-similarity-search&quot;&gt;Brute force similarity search&lt;/h3&gt;
+
+&lt;p&gt;With the similarity metric and a feature extraction routine in place, we pretty much have a complete working similarity search system, albeit an efficient one. If given a query &lt;script type=&quot;math/tex&quot;&gt;q&lt;/script&gt;, we can find the closest item to &lt;script type=&quot;math/tex&quot;&gt;q&lt;/script&gt; in dataset &lt;script type=&quot;math/tex&quot;&gt;D&lt;/script&gt; using the following routine:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;find_nearest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;D&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;nearest_neighbor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;min_distance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;infinity&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;D&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;distance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;compute_distance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;min_distance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;distance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;min_distance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;distance&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;nearest_neighbor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nearest_neighbor&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The approach above scales in &lt;script type=&quot;math/tex&quot;&gt;O(m \times n)&lt;/script&gt; time where &lt;script type=&quot;math/tex&quot;&gt;m&lt;/script&gt; is the number of items in our dataset &lt;script type=&quot;math/tex&quot;&gt;D&lt;/script&gt; and &lt;script type=&quot;math/tex&quot;&gt;n&lt;/script&gt; is the number of dimensions in our feature vector. So even for a modest database size of 1000 items and a feature vector of 256 dimensions, we could be computing up to 256 thousand operations with every single query!&lt;/p&gt;
+
+&lt;h3 id=&quot;to-be-continued-&quot;&gt;To be continued …&lt;/h3&gt;
+
+&lt;p&gt;In the next part of this series, we’ll take a look at using &lt;a href=&quot;https://en.wikipedia.org/wiki/Vantage-point_tree&quot;&gt;vantage point trees&lt;/a&gt; to see how we can more efficiently store our data set so that it’s less computationally intensive to search over.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;/posts/similarity-search-101-with-vantage-point-trees/&quot;&gt;&lt;strong&gt;continue to part 2 →&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+
+</content>
+
+ </entry>
+ 
+ <entry>
+   <title>Faster Numpy Dot Product for Multi-dimensional Arrays</title>
+   <link href="http://blog.everyhue.me/posts/faster-numpy-dot-product/"/>
+   <updated>2013-12-14T00:00:00-08:00</updated>
+   <id>http://blog.everyhue.me/posts/faster-numpy-dot-product</id>
+   
+
+   <content type="html">&lt;p&gt;When installed and linked correctly against a blas implementation like ATLAS or
+OpenBlas, numpy’s &lt;code class=&quot;highlighter-rouge&quot;&gt;dot&lt;/code&gt; product can run incredibly fast. What I hadn’t known until recently is that for some special cases, you can perform dot products an order of magnitude faster just by calling the underlying blas routines directly.&lt;/p&gt;
+
+&lt;p&gt;In order to do so, I’ve written a module called &lt;a href=&quot;https://gist.github.com/huyng/7969327#file-fastdot-py&quot;&gt;fastdot&lt;/a&gt;, whose source code is located in a github &lt;a href=&quot;https://gist.github.com/huyng/7969327#file-fastdot-py&quot;&gt;gist&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The code, in a nutshell, is a wrapper around blas’s generalized matrix-matrix multiplication routines (A.K.A “gemm”). Its main job is to ensure that the arrays that get passed into it are in FORTRAN contiguous order before handing-off the bulk of the work to the underlying blas routines.&lt;/p&gt;
+
+&lt;h6 id=&quot;performance-comparison-between-dot-product-implementations&quot;&gt;Performance comparison between dot product implementations&lt;/h6&gt;
+
+&lt;p&gt;I ran a few benchmarks and plotted below the speed differences between &lt;code class=&quot;highlighter-rouge&quot;&gt;fastdot.dot&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;np.dot&lt;/code&gt; operating on matrices of varying dimensions and sizes.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/media/3014/dot_time.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;A shape            B shape     array dims    function       time (s)
+-----------------  ----------  ------------  -----------  ----------
+(8, 55, 55, 1024)  (1024, 92)  4d * 2d       np.dot           2.0168
+(440, 55, 1024)    (1024, 92)  3d * 2d       np.dot           1.9883
+(24200, 1024)      (1024, 92)  2d * 2d       np.dot           0.0944
+
+(8, 55, 55, 1024)  (1024, 92)  4d * 2d       fastdot.dot      0.1187
+(440, 55, 1024)    (1024, 92)  3d * 2d       fastdot.dot      0.0940
+(24200, 1024)      (1024, 92)  2d * 2d       fastdot.dot      0.1342&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;As you can see &lt;code class=&quot;highlighter-rouge&quot;&gt;fastdot.dot&lt;/code&gt; runs almost &lt;strong&gt;20X&lt;/strong&gt; faster than &lt;code class=&quot;highlighter-rouge&quot;&gt;np.dot&lt;/code&gt; when one of your matrices has 3 dimensions or more. But before you start using it everywhere that you need a dot product, do take notice that it runs slightly slower than numpy’s implementation when operating on matrices with 2 dimensions or less.&lt;/p&gt;
+
+&lt;p&gt;As a rule of thumb, use fastdot when you know ahead of time that the number of dimensions in your matrices will be larger than 3. It could increase your program’s performace by 20x. Otherwise stick with numpy’s implementation.&lt;/p&gt;
+
+</content>
+
+ </entry>
+ 
+ <entry>
+   <title>The JSON Streaming Record (JSRec) data format</title>
+   <link href="http://blog.everyhue.me/posts/json-streaming-record-data-format/"/>
+   <updated>2013-10-30T00:00:00-07:00</updated>
+   <id>http://blog.everyhue.me/posts/json-streaming-record-data-format</id>
+   
+   <category term="programming" />
+   
+   <category term="python" />
+   
+
+   <content type="html">&lt;p&gt;I’m inventing a new data format (as blasphemous as it sounds). 
+It’s flexible, human readable, easy to produce, and best of
+ all, nearly impossible to screw up parsing.&lt;/p&gt;
+
+&lt;p&gt;I’m doing it to replace CSV files because you shouldn’t have to
+worry about quoting, escaping, or deciding whether your “comma” sepearated
+values turn out to really mean semicolon or even worse, tab delimited.&lt;/p&gt;
+
+&lt;p&gt;The new data format is called &lt;strong&gt;json streaming record&lt;/strong&gt; or &lt;strong&gt;JSRec&lt;/strong&gt; for short.
+While I say it’s “new”, I’m sure many of you have either produced or 
+consumed this type of data already at some point in your career.&lt;/p&gt;
+
+&lt;p&gt;Here’s how it’s defined:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Files of this format have &lt;strong&gt;.jsrec&lt;/strong&gt; as their file extension&lt;/li&gt;
+  &lt;li&gt;Each line in the file is a json hash map&lt;/li&gt;
+  &lt;li&gt;Empty lines and lines beginning with ‘&lt;strong&gt;#&lt;/strong&gt;’ are considred comments and ignored during parsing&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Here’s an example file foobar.jsrec&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;{&quot;foo&quot;:1, &quot;bar&quot;: &quot;marry&quot;}
+{&quot;foo&quot;:11, &quot;bar&quot;: &quot;had a&quot;}
+{&quot;foo&quot;:21, &quot;bar&quot;: &quot;little lamb&quot;}
+
+# some comments
+{&quot;foo&quot;:33, &quot;bar&quot;: &quot;more data&quot;}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Here’s the code to parse and encode this data format:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;json&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;load_jsrec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;filename&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;&quot;&quot;&quot;loads a .jsrec file&quot;&quot;&quot;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;fh&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;filename&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;line&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;line&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;line&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;strip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;line&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;continue&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;line&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;startswith&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;#&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;continue&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;yield&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;json&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loads&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;line&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;fh&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;dump_jsrec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;filename&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;records&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;&quot;&quot;&quot;writes a .jsrec file&quot;&quot;&quot;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;filename&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;w&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rec&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;records&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;fh&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;json&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dumps&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h5 id=&quot;a-new-use-case-building-data-processing-pipelines-with-jsrec&quot;&gt;A new use case: building data processing pipelines with JSRec&lt;/h5&gt;
+
+&lt;p&gt;Because each line in a JSRec file contains all the information necessary
+to parse a record, you can use it to pipe output from one program to another:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;cat foobar.jsrec | progA | progB
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;As long as the programs you’re using understands JSRec, you can start chaining
+them together. This is HUGE because it makes building data processing pipelines
+on the commandline a modular and simple task.&lt;/p&gt;
+
+&lt;h5 id=&quot;when-to-use-it&quot;&gt;When to use it&lt;/h5&gt;
+
+&lt;p&gt;Json Streaming Record is an ideal replacement for CSV files. Use it when you want a
+data format that can store “streams” of records that are human readable yet easily
+parsed by a machine.&lt;/p&gt;
+
+&lt;p&gt;With each line of the format being a completely self-contained JSON object, JSRec
+allows you to produce and consume data in an incremental fashion. I encourage you to start 
+using it as a data format to pass around on the commandline for when you’re 
+building those data processing pipelines.&lt;/p&gt;
+
+</content>
+
+ </entry>
+ 
+ <entry>
+   <title>A Guide to Analyzing Python Performance</title>
+   <link href="http://blog.everyhue.me/posts/python-performance-analysis/"/>
+   <updated>2013-09-03T00:00:00-07:00</updated>
+   <id>http://blog.everyhue.me/posts/python-performance-analysis</id>
+   
+   <category term="programming" />
+   
+   <category term="python" />
+   
+
+   <content type="html">&lt;p&gt;While it’s not always the case that every Python program you write will require a rigorous performance analysis, it is reassuring to know that there are a wide variety of tools in Python’s ecosystem that one can turn to when the time arises.&lt;/p&gt;
+
+&lt;p&gt;Analyzing a program’s performance boils down to answering 4 basic questions:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;How fast is it running?&lt;/li&gt;
+  &lt;li&gt;Where are the speed bottlenecks?&lt;/li&gt;
+  &lt;li&gt;How much memory is it using?&lt;/li&gt;
+  &lt;li&gt;Where is memory leaking?&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Below, we’ll dive into the details of answering these questions using some awesome tools.&lt;/p&gt;
+
+&lt;h3 id=&quot;coarse-grain-timing-with-time&quot;&gt;Coarse grain timing with time&lt;/h3&gt;
+
+&lt;p&gt;Let’s begin by using a quick and dirty method of timing our code: the good old unix utility &lt;code class=&quot;highlighter-rouge&quot;&gt;time&lt;/code&gt;.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;time &lt;/span&gt;python yourprogram.py
+
+real    0m1.028s
+user    0m0.001s
+sys     0m0.003s&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The meaning between the three output measurements are detailed in this &lt;a href=&quot;http://stackoverflow.com/questions/556405/what-do-real-user-and-sys-mean-in-the-output-of-time1&quot;&gt;stackoverflow article&lt;/a&gt;, but in short&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;real - refers to the actual elasped time&lt;/li&gt;
+  &lt;li&gt;user - refers to the amount of cpu time spent outside of kernel&lt;/li&gt;
+  &lt;li&gt;sys - refers to the amount of cpu time spent inside kernel specific functions&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;You can get a sense of how many cpu cycles your program used up regardless of other programs running on the system by adding together the &lt;em&gt;sys&lt;/em&gt; and &lt;em&gt;user&lt;/em&gt; times.&lt;/p&gt;
+
+&lt;p&gt;If the sum of &lt;em&gt;sys&lt;/em&gt; and &lt;em&gt;user&lt;/em&gt; times is much less than &lt;em&gt;real&lt;/em&gt; time, then you can guess that most your program’s performance issues are most likely related to IO waits.&lt;/p&gt;
+
+&lt;h3 id=&quot;fine-grain-timing-with-a-timing-context-manager&quot;&gt;Fine grain timing with a timing context manager&lt;/h3&gt;
+
+&lt;p&gt;Our next technique involves direct instrumentation of the code to get access to finer grain timing information. Here’s a small snippet I’ve found invaluable for making ad-hoc timing measurements:&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;timer.py&lt;/code&gt;&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;time&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Timer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;object&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;__init__&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;verbose&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;False&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;verbose&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;verbose&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;__enter__&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;start&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;time&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;__exit__&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;end&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;time&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;secs&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;end&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;start&lt;/span&gt;
+        &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msecs&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;secs&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1000&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;# millisecs
+&lt;/span&gt;        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;verbose&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'elapsed time: &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;f ms'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msecs&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;In order to use it, wrap blocks of code that you want to time with Python’s &lt;code class=&quot;highlighter-rouge&quot;&gt;with&lt;/code&gt; keyword and this &lt;code class=&quot;highlighter-rouge&quot;&gt;Timer&lt;/code&gt; context manager. It will take care of starting the timer when your code block begins execution and stopping the timer when your code block ends.&lt;/p&gt;
+
+&lt;p&gt;Here’s an example use of the snippet:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;timer&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Timer&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;redis&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Redis&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;rdb&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Redis&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Timer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;rdb&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lpush&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;foo&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;bar&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;=&amp;gt; elasped lpush: &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;s s&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;secs&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Timer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;rdb&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lpop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;foo&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;=&amp;gt; elasped lpop: &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;s s&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;secs&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I’ll often log the outputs of these timers to a file in order to see how my program’s performance evolves over time.&lt;/p&gt;
+
+&lt;h3 id=&quot;line-by-line-timing-and-execution-frequency-with-a-profiler&quot;&gt;Line-by-line timing and execution frequency with a profiler&lt;/h3&gt;
+
+&lt;p&gt;Robert Kern has a nice project called &lt;a href=&quot;http://packages.python.org/line_profiler/&quot;&gt;line_profiler&lt;/a&gt; which I often use to see how fast and how often each line of code is running in my scripts.&lt;/p&gt;
+
+&lt;p&gt;To use it, you’ll need to install the python package via pip:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;pip &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;line_profiler&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Once installed you’ll have access to a new module called “line_profiler” as well as an executable script “kernprof.py”.&lt;/p&gt;
+
+&lt;p&gt;To use this tool, first modify your source code by decorating the function you want to measure with the &lt;code class=&quot;highlighter-rouge&quot;&gt;@profile&lt;/code&gt; decorator. Don’t worry, you don’t have to import anyting in order to use this decorator. The &lt;code class=&quot;highlighter-rouge&quot;&gt;kernprof.py&lt;/code&gt; script  automatically injects it into your script’s runtime during execution.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;primes.py&lt;/code&gt;&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;profile&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;primes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;==&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;elif&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;range&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;mroot&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.5&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;half&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;m&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mroot&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]:&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;half&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;primes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Once you’ve gotten your code setup with the &lt;code class=&quot;highlighter-rouge&quot;&gt;@profile&lt;/code&gt; decorator, use &lt;code class=&quot;highlighter-rouge&quot;&gt;kernprof.py&lt;/code&gt; to run your script.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;kernprof.py &lt;span class=&quot;nt&quot;&gt;-l&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-v&lt;/span&gt; fib.py&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;-l&lt;/code&gt; option tells kernprof to inject the &lt;code class=&quot;highlighter-rouge&quot;&gt;@profile&lt;/code&gt; decorator into your script’s builtins, and &lt;code class=&quot;highlighter-rouge&quot;&gt;-v&lt;/code&gt; tells kernprof to display timing information once you’re script finishes. Here’s one the output should look like for the above script:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Wrote profile results to primes.py.lprof
+Timer unit: 1e-06 s
+
+File: primes.py
+Function: primes at line 2
+Total time: 0.00019 s
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+     2                                           @profile
+     3                                           def primes(n):
+     4         1            2      2.0      1.1      if n==2:
+     5                                                   return [2]
+     6         1            1      1.0      0.5      elif n&amp;lt;2:
+     7                                                   return []
+     8         1            4      4.0      2.1      s=range(3,n+1,2)
+     9         1           10     10.0      5.3      mroot = n ** 0.5
+    10         1            2      2.0      1.1      half=(n+1)/2-1
+    11         1            1      1.0      0.5      i=0
+    12         1            1      1.0      0.5      m=3
+    13         5            7      1.4      3.7      while m &amp;lt;= mroot:
+    14         4            4      1.0      2.1          if s[i]:
+    15         3            4      1.3      2.1              j=(m*m-3)/2
+    16         3            4      1.3      2.1              s[j]=0
+    17        31           31      1.0     16.3              while j&amp;lt;half:
+    18        28           28      1.0     14.7                  s[j]=0
+    19        28           29      1.0     15.3                  j+=m
+    20         4            4      1.0      2.1          i=i+1
+    21         4            4      1.0      2.1          m=2*i+3
+    22        50           54      1.1     28.4      return [2]+[x for x in s if x]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Look for lines with a high amount of hits or a high time interval. These are the areas where optimizations can yield the greatest improvements.&lt;/p&gt;
+
+&lt;h3 id=&quot;how-much-memory-does-it-use&quot;&gt;How much memory does it use?&lt;/h3&gt;
+
+&lt;p&gt;Now that we have a good grasp on timing our code, let’s move on to figuring out how much memory our programs are using. Fortunately for us, Fabian Pedregosa has implemented a nice &lt;a href=&quot;https://github.com/fabianp/memory_profiler&quot;&gt;memory profiler&lt;/a&gt; modeled after Robert Kern’s line_profiler.&lt;/p&gt;
+
+&lt;p&gt;First install it via pip:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;pip &lt;span class=&quot;nb&quot;&gt;install&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-U&lt;/span&gt; memory_profiler
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;pip &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;psutil&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;(Installing the &lt;code class=&quot;highlighter-rouge&quot;&gt;psutil&lt;/code&gt; package here is recommended because it greatly improves the performance of the memory_profiler).&lt;/p&gt;
+
+&lt;p&gt;Like line_profiler, memory_profiler requires that you decorate your function of interest with an &lt;code class=&quot;highlighter-rouge&quot;&gt;@profile&lt;/code&gt; decorator like so:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;profile&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;primes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;...&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;...&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;To see how much memory your function uses run the following:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;python &lt;span class=&quot;nt&quot;&gt;-m&lt;/span&gt; memory_profiler primes.py&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;You should see output that looks like this once your program exits:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Filename: primes.py
+
+Line #    Mem usage  Increment   Line Contents
+==============================================
+     2                           @profile
+     3    7.9219 MB  0.0000 MB   def primes(n):
+     4    7.9219 MB  0.0000 MB       if n==2:
+     5                                   return [2]
+     6    7.9219 MB  0.0000 MB       elif n&amp;lt;2:
+     7                                   return []
+     8    7.9219 MB  0.0000 MB       s=range(3,n+1,2)
+     9    7.9258 MB  0.0039 MB       mroot = n ** 0.5
+    10    7.9258 MB  0.0000 MB       half=(n+1)/2-1
+    11    7.9258 MB  0.0000 MB       i=0
+    12    7.9258 MB  0.0000 MB       m=3
+    13    7.9297 MB  0.0039 MB       while m &amp;lt;= mroot:
+    14    7.9297 MB  0.0000 MB           if s[i]:
+    15    7.9297 MB  0.0000 MB               j=(m*m-3)/2
+    16    7.9258 MB -0.0039 MB               s[j]=0
+    17    7.9297 MB  0.0039 MB               while j&amp;lt;half:
+    18    7.9297 MB  0.0000 MB                   s[j]=0
+    19    7.9297 MB  0.0000 MB                   j+=m
+    20    7.9297 MB  0.0000 MB           i=i+1
+    21    7.9297 MB  0.0000 MB           m=2*i+3
+    22    7.9297 MB  0.0000 MB       return [2]+[x for x in s if x]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;ipython-shortcuts-for-line_profiler-and-memory_profiler&quot;&gt;IPython shortcuts for line_profiler and memory_profiler&lt;/h3&gt;
+
+&lt;p&gt;A little known feature of &lt;code class=&quot;highlighter-rouge&quot;&gt;line_profiler&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;memory_profiler&lt;/code&gt; is that both programs have shortcut commands accessible from within IPython. All you have to do is type the following within an IPython session:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;%load_ext memory_profiler
+%load_ext line_profiler
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Upon doing so you’ll have access to the magic commands &lt;code class=&quot;highlighter-rouge&quot;&gt;%lprun&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;%mprun&lt;/code&gt; which behave similarly to their command-line counterparts. The major difference here is that you won’t need to decorate your to-be-profiled functions with the &lt;code class=&quot;highlighter-rouge&quot;&gt;@profile&lt;/code&gt; decorator. Just go ahead and run the profiling directly within your IPython session like so:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;In [1]: from primes import primes
+In [2]: %mprun -f primes primes(1000)
+In [3]: %lprun -f primes primes(1000)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This can save you a lot of time and effort since none of your source code needs to be modified in order to use these profiling commands.&lt;/p&gt;
+
+&lt;h3 id=&quot;wheres-the-memory-leak&quot;&gt;Where’s the memory leak?&lt;/h3&gt;
+
+&lt;p&gt;The cPython interpreter uses reference counting as it’s main method of keeping track of memory. This means that every object contains a counter, which is incremented when a reference to the object is stored somewhere, and decremented when a reference to it is deleted. When the counter reaches zero, the cPython interpreter knows that the object is no longer in use so it deletes the object and deallocates the occupied memory.&lt;/p&gt;
+
+&lt;p&gt;A memory leak can often occur in your program if references to objects are held even though the object is no longer in use.&lt;/p&gt;
+
+&lt;p&gt;The quickest way to find these “memory leaks” is to use an awesome tool called &lt;a href=&quot;http://mg.pov.lt/objgraph/&quot;&gt;objgraph&lt;/a&gt; written by Marius Gedminas. This tool allows you to see the number of objects in memory and also locate all the different places in your code that hold references to these objects.&lt;/p&gt;
+
+&lt;p&gt;To get started, first install &lt;code class=&quot;highlighter-rouge&quot;&gt;objgraph&lt;/code&gt;:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;pip &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;objgraph&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Once you have this tool installed, insert into your code a statement to invoke the debugger:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;pdb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pdb&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;set_trace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h5 id=&quot;which-objects-are-the-most-common&quot;&gt;Which objects are the most common?&lt;/h5&gt;
+
+&lt;p&gt;At run time, you can inspect the top 20 most prevalent objects in your program by running:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;(pdb) import objgraph
+(pdb) objgraph.show_most_common_types()
+
+MyBigFatObject             20000
+tuple                      16938
+function                   4310
+dict                       2790
+wrapper_descriptor         1181
+builtin_function_or_method 934
+weakref                    764
+list                       634
+method_descriptor          507
+getset_descriptor          451
+type                       439
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h5 id=&quot;which-objects-have-been-added-or-deleted&quot;&gt;Which objects have been added or deleted?&lt;/h5&gt;
+
+&lt;p&gt;We can also see which objects have been added or deleted between two points in time:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;(pdb) import objgraph
+(pdb) objgraph.show_growth()
+.
+.
+.
+(pdb) objgraph.show_growth()   # this only shows objects that has been added or deleted since last show_growth() call
+
+traceback                4        +2
+KeyboardInterrupt        1        +1
+frame                   24        +1
+list                   667        +1
+tuple                16969        +1
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h5 id=&quot;what-is-referencing-this-leaky-object&quot;&gt;What is referencing this leaky object?&lt;/h5&gt;
+
+&lt;p&gt;Continuing down this route, we can also see where references to any given object is being held. Let’s take as an example the simple program below:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;a&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}]&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;pdb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pdb&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;set_trace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;To see what is holding a reference to the variable &lt;code class=&quot;highlighter-rouge&quot;&gt;x&lt;/code&gt;, run the &lt;code class=&quot;highlighter-rouge&quot;&gt;objgraph.show_backref()&lt;/code&gt; function:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;(pdb) import objgraph
+(pdb) objgraph.show_backref([x], filename=&quot;/tmp/backrefs.png&quot;)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The output of that command should be a PNG image stored at &lt;code class=&quot;highlighter-rouge&quot;&gt;/tmp/backrefs.png&lt;/code&gt; and it should look something like this:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/media/3011/backrefs.png&quot; alt=&quot;back refrences&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The box at the bottom with red lettering is our object of interest. We can see that it’s referenced by the symbol &lt;code class=&quot;highlighter-rouge&quot;&gt;x&lt;/code&gt; once and by the list &lt;code class=&quot;highlighter-rouge&quot;&gt;y&lt;/code&gt; three times. If &lt;code class=&quot;highlighter-rouge&quot;&gt;x&lt;/code&gt; is the object causing a memory leak, we can use this method to see why it’s not automatically being deallocated by tracking down all of its references.&lt;/p&gt;
+
+&lt;p&gt;So to review, &lt;a href=&quot;http://mg.pov.lt/objgraph/&quot;&gt;objgraph&lt;/a&gt; allows us to:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;show the top N objects occupying our python program’s memory&lt;/li&gt;
+  &lt;li&gt;show what objects have been deleted or added over a period of time&lt;/li&gt;
+  &lt;li&gt;show all references to a given object in our script&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;effort-vs-precision&quot;&gt;Effort vs precision&lt;/h3&gt;
+
+&lt;p&gt;In this post, I’ve shown you how to use several tools to analyze a python program’s performance. Armed with these tools and techniques you should have all the information required to track down most memory leaks as well as identify speed bottlenecks in a Python program.&lt;/p&gt;
+
+&lt;p&gt;As with many other topics, running a performance analysis means balancing the tradeoffs between effort and precision. When in doubt, implement the simplest solution that will suit your current needs.&lt;/p&gt;
+
+&lt;h5 id=&quot;refrences&quot;&gt;Refrences&lt;/h5&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;http://stackoverflow.com/questions/556405/what-do-real-user-and-sys-mean-in-the-output-of-time1&quot;&gt;stack overflow - time explained&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://packages.python.org/line_profiler/&quot;&gt;line_profiler&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/fabianp/memory_profiler&quot;&gt;memory_profiler&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://mg.pov.lt/objgraph/&quot;&gt;objgraph&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+</content>
+
+ </entry>
+ 
+ <entry>
+   <title>My Tmux Setup</title>
+   <link href="http://blog.everyhue.me/posts/my-tmux-setup/"/>
+   <updated>2013-08-21T00:00:00-07:00</updated>
+   <id>http://blog.everyhue.me/posts/my-tmux-setup</id>
+   
+
+   <content type="html">&lt;p&gt;If you do a lot of context switching between projects, recreating your terminal
+environment &amp;amp; window layout can easily eat up hours of your day. Here’s a quick tip
+to help you create and manage persistent terminal workspaces so that with a
+few keystrokes, you can jump straight back into whatever you were working on
+as quickly as possible.&lt;/p&gt;
+
+&lt;h5 id=&quot;how-it-works&quot;&gt;How it works&lt;/h5&gt;
+
+&lt;p&gt;The whole idea behind this setup is to make it so you will have 1) The ability to name your
+terminal workspaces with easily memorizable names and 2) the  ability to keep persistent terminal workspaces running
+even if you’ve closed your terminal window.&lt;/p&gt;
+
+&lt;p&gt;All of this is achieved with the following shell script which we’ll configure &lt;a href=&quot;http://www.iterm2.com/&quot;&gt;iTerm2&lt;/a&gt; to execute
+anytime you open a new window.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/sh&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;PATH&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$PATH&lt;/span&gt;:/usr/local/bin
+
+&lt;span class=&quot;c&quot;&gt;# abort if we're already inside a TMUX session&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$TMUX&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;exit &lt;/span&gt;0
+
+&lt;span class=&quot;c&quot;&gt;# startup a &quot;default&quot; session if none currently exists&lt;/span&gt;
+tmux has-session &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; _default &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; tmux new-session &lt;span class=&quot;nt&quot;&gt;-s&lt;/span&gt; _default &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# present menu for user to choose which workspace to open&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;PS3&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Please choose your session: &quot;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;options&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=(&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;tmux list-sessions &lt;span class=&quot;nt&quot;&gt;-F&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;#S&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;NEW SESSION&quot;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;BASH&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Available sessions&quot;&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;------------------&quot;&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot; &quot;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;select &lt;/span&gt;opt &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;options&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[@]&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;do
+    case&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$opt&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+        &lt;span class=&quot;s2&quot;&gt;&quot;NEW SESSION&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;nb&quot;&gt;read&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-p&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Enter new session name: &quot;&lt;/span&gt; SESSION_NAME
+            tmux new &lt;span class=&quot;nt&quot;&gt;-s&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$SESSION_NAME&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+            &lt;span class=&quot;nb&quot;&gt;break&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;;;&lt;/span&gt;
+        &lt;span class=&quot;s2&quot;&gt;&quot;BASH&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            bash &lt;span class=&quot;nt&quot;&gt;--login&lt;/span&gt;
+            &lt;span class=&quot;nb&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            tmux attach-session &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$opt&lt;/span&gt;
+            &lt;span class=&quot;nb&quot;&gt;break&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;esac&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;done&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h5 id=&quot;setting-it-up&quot;&gt;Setting it up&lt;/h5&gt;
+
+&lt;p&gt;First off, place the above script in a location that’s accessible to &lt;a href=&quot;http://www.iterm2.com/&quot;&gt;iTerm2&lt;/a&gt; (I usually place it in ~/.dotfiles/tmux.start.sh).&lt;/p&gt;
+
+&lt;p&gt;Then open up iTerm2’s terminal preferences and have it execute this script anytime you open a new window:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/media/3012/iterm2config.jpg&quot; alt=&quot;iterm2config&quot; /&gt;&lt;/p&gt;
+
+&lt;h5 id=&quot;usage&quot;&gt;Usage&lt;/h5&gt;
+
+&lt;p&gt;Once you’ve done all the above, everytime you open a new window, you’ll be prompted to choose which previous
+workspace you want to join.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/media/3012/newsession.jpg&quot; alt=&quot;newsession&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;You’ll also have the opportunity to create new work spaces by choosing &lt;em&gt;NEW SESSION&lt;/em&gt;. Or if you don’t want to open a
+full blown tmux session, you can choose to just open up a BASH prompt. All of these sessions are persistent. So if you
+decide to close your terminal window, they will remain active in the background and ready for you to rejoin at a later
+point in time.&lt;/p&gt;
+
+</content>
+
+ </entry>
+ 
+ <entry>
+   <title>GGPlot2 theme for Matplotlib</title>
+   <link href="http://blog.everyhue.me/posts/sane-color-scheme-for-matplotlib/"/>
+   <updated>2011-02-08T00:00:00-08:00</updated>
+   <id>http://blog.everyhue.me/posts/sane-color-scheme-for-matplotlib</id>
+   
+   <category term="python" />
+   
+   <category term="programming" />
+   
+
+   <content type="html">&lt;p&gt;
+    John Hunter, creator of &lt;a href=&quot;http://matplotlib.sourceforge.net/&quot;&gt;MatPlotlib&lt;/a&gt;, originally designed it&amp;rsquo;s color scheme to be familiar to Matlab users. As it turns out, the color scheme works well for publication material but doesn't work so great for viewing visualizations on the web.
+&lt;/p&gt;
+&lt;p&gt;
+    I find the default styling for graphs produced using &lt;a href=&quot;http://had.co.nz/ggplot2/&quot;&gt;ggplot2&lt;/a&gt; aesthetically pleasing for this purpose, so I spent some time over the weekend to refine the default colors and settings for my matplotlib installation. The result of this work is embodied in this &lt;a href=&quot;https://gist.github.com/816622&quot;&gt;.matplotlibrc color theme&lt;/a&gt; file. If you want graphs that look like the ones below &lt;em&gt;by default&lt;/em&gt;, download it and place the file under &lt;code&gt;~/.matplotlib/matplotlibrc&lt;/code&gt;.
+&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&quot;scatter plot&quot; src=&quot;http://imgur.com/oPvCE.png&quot; /&gt;
+&lt;img alt=&quot;bar charts&quot; src=&quot;http://imgur.com/063Hs.png&quot; /&gt;
+&lt;img alt=&quot;line plot&quot; src=&quot;http://imgur.com/kjVuA.png&quot; /&gt;
+&lt;img alt=&quot;time series&quot; src=&quot;http://imgur.com/Idqs4.png&quot; /&gt;
+&lt;img alt=&quot;histogram&quot; src=&quot;http://imgur.com/Z0GWx.png&quot; /&gt;&lt;/p&gt;
+</content>
+
+ </entry>
+ 
+ <entry>
+   <title>Gathering Leads using MTurk</title>
+   <link href="http://blog.everyhue.me/posts/gathering-leads-using-mturk/"/>
+   <updated>2010-06-13T00:00:00-07:00</updated>
+   <id>http://blog.everyhue.me/posts/gathering-leads-using-mturk</id>
+   
+   <category term="crowdsourcing" />
+   
+   <category term="python" />
+   
+   <category term="programming" />
+   
+
+   <content type="html">&lt;!-- End Meta --&gt;
+&lt;p&gt;I want to share a technique with you that I have been using to streamline my &lt;a href=&quot;http://steveblank.com/category/customer-development/&quot;&gt;customer development&lt;/a&gt; process. It's experimental, but so far it's saving me a lot of time and producing good results. &lt;/p&gt;
+&lt;p&gt;At the core, my technique involves using MTurk to collect targeted leads for some business ideas that have been brewing in my head. By using MTurk I was able to gather contact information from a huge list of websites in a very little amount of time. Sure, I could've written a scraper to find emails on most of these sites, but after weighing the cost/benefit ratio, I figured it just wasn't worth my time.&lt;/p&gt;
+&lt;!--more--&gt;
+&lt;h3&gt;The Task&lt;/h3&gt;
+&lt;p&gt;To give you some context, I had a list of around 2000 urls pointing to local chamber of commerce sites scattered across the United States. Quite a few of my business ideas involve these organizations, so I wanted to &lt;a href=&quot;http://steveblank.com/category/customer-development/&quot;&gt;validate&lt;/a&gt;/gauge interest by sending out targeted email inquiries to each organization's leader. &lt;/p&gt;
+&lt;p&gt;For those of you unfamiliar with MTurk, it is a crowd-sourcing service from Amazon that allows you to submit small, well-defined tasks to thousands of people around the world. You basically construct a HTML form with a special templating syntax and then submit a CSV file that will populate into that form when Amazon displays it to their crowd of workers. &lt;/p&gt;
+&lt;p&gt;You can see a sample of the task that I created below. &lt;/p&gt;
+&lt;p&gt;&lt;img alt=&quot;mturk preview&quot; src=&quot;/media/3000/mturk_preview.png&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Aside: I generated the above form using &lt;a href=&quot;http://shpaml.webfactional.com/&quot;&gt;Shpaml&lt;/a&gt; which I highly recommend for writing short-hand HTML. It significantly cut down on my typing and development time.&lt;/p&gt;
+&lt;h3&gt;The Results&lt;/h3&gt;
+&lt;p&gt;I ran a test trial using 100 urls. The task was set up so that every url would be sent to at least 3 workers. In total, 300 turkers worked on my task. On Sunday morning I had submitted the task to Amazon Mturk. When I came back 4 hours later, it was already completed! Although there were a few spammers, the overall quality was great for what I was trying to achieve. Check out a small sample of &lt;a href=&quot;http://www.huyng.com/wp-content/uploads/mtruk_results.csv_.zip&quot;&gt;my mturk results&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Out of the batch of 300, fourty of the answers came from spammers. I know that 13 percent sounds like a lot! However, since I had 3 workers work on each URL, I quickly filtered out the spam by accepting only the answers where two or more mturkers intersected.&lt;/p&gt;
+
+&lt;script&gt;utmx_section(&quot;emailme&quot;)&lt;/script&gt;
+&lt;p&gt;For those of you trying to capture the local marketplace, or even if you're just interested in getting this data, send me a &lt;a href=&quot;/about/&quot;&gt;quick email&lt;/a&gt;! I will be running through the rest of my batch in the upcoming days.&lt;/p&gt;&lt;/noscript&gt;
+</content>
+
+ </entry>
+ 
+ <entry>
+   <title>Don't Hash Your Secrets</title>
+   <link href="http://blog.everyhue.me/posts/dont-hash-your-secrets-heres-why-in-python/"/>
+   <updated>2010-02-01T00:00:00-08:00</updated>
+   <id>http://blog.everyhue.me/posts/dont-hash-your-secrets-heres-why-in-python</id>
+   
+   <category term="programming" />
+   
+   <category term="python" />
+   
+
+   <content type="html">&lt;!-- End Meta --&gt;
+&lt;p&gt;Ben Adida suggests that you &lt;a href=&quot;http://benlog.com/articles/2008/06/19/dont-hash-secrets/&quot;&gt;don't hash your secrets&lt;/a&gt;.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;That means that if you know SHA1(secret || message), then you can compute SHA1(secret || message  || ANYTHING), which is a valid signature for message || ANYTHING. So to break this system, you just need to see one signature.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Not being a cryptography expert, I was blown away by his article. At the core of his post is the idea that given a hash digest of a &lt;strong&gt;message&lt;/strong&gt;, one could compute the hash of &lt;strong&gt;message + appended_message&lt;/strong&gt; without even knowing the original message. &lt;/p&gt;
+&lt;p&gt;I had to see this for myself. Was it &lt;em&gt;that&lt;/em&gt; easy to extend an MD5 or SHA1 hash?
+Below, you'll find working &lt;a href=&quot;/media/3006/spoof_md5.py.txt&quot;&gt;python code&lt;/a&gt; and an explanation for spoofing signatures signed with the MD5 algroithm. &lt;/p&gt;
+&lt;!--more--&gt;
+&lt;h3&gt;Implementation&lt;/h3&gt;
+&lt;p&gt;To generate a hash from a message, algorithms like MD5 and SHA1 iterate through the message block by block. For each block, the algorithm runs a &lt;a href=&quot;http://en.wikipedia.org/wiki/Cryptographic_hash_function#Merkle-Damg.C3.A5rd_construction&quot;&gt;transformation function&lt;/a&gt; where the input is a &lt;strong&gt;seed state&lt;/strong&gt; and a &lt;strong&gt;message block&lt;/strong&gt; . The output of this transformation is then fed back as the &lt;strong&gt;seed state&lt;/strong&gt; for the transformation of the next message block (see the above diagram).&lt;/p&gt;
+
+&lt;center&gt;&lt;img alt=&quot;md5.png&quot; src=&quot;/media/3006/md5.png&quot; width=&quot;100%&quot;&gt;&lt;/center&gt;
+&lt;p&gt;After the hashing function has digested the entire message, it then appends some padding and runs the transformation function one more time. The &lt;strong&gt;final state&lt;/strong&gt; of this transformation becomes the digest. &lt;/p&gt;
+&lt;div class=&quot;codehilite&quot;&gt;&lt;pre&gt;&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;hashlib&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;md5&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;signature&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;md5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;secret&amp;quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;hello world&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;digest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;repr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;signature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;span class=&quot;s&quot;&gt;&amp;quot;O&amp;#39;Q&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\xa8\xb8\x9d\x81&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\xd7\x13&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\xe0\xfb&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;_2&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\xde&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In the code above, &lt;strong&gt;the signature represents the state output of the final transformation function&lt;/strong&gt;. &lt;/p&gt;
+&lt;p&gt;AHA! We now have a strategy to extend the hash. If we can seed the transformation function with the state(AKA signature) of the original message, we can essentially extend the hash without even knowing the original message. &lt;/p&gt;
+&lt;p&gt;There is one problem however. I mentioned before that the MD5 algorithm adds a piece of padding to the original message before it gives us the hash. That means whenever we see a signature it's really the hash of the &lt;strong&gt;message + padding&lt;/strong&gt;. Fortunately, the padding is only dependent upon the length of the original message. With that in mind, we can easily generate both the new signature and padding. Here's some pseudocode&lt;/p&gt;
+&lt;div class=&quot;codehilite&quot;&gt;&lt;pre&gt;&lt;span class=&quot;n&quot;&gt;state&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;signature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;padding&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;calculate_padding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;original_message_len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;new_signature&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;appended message&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# This should be True&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;new_signature&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;md5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;original_message&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;padding&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;appended message&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;digest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Now here is the real code.&lt;br /&gt;
+&lt;/p&gt;
+&lt;div class=&quot;codehilite&quot;&gt;&lt;pre&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;spoof_digest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;originalDigest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;originalLen&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;spoofMessage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;c&quot;&gt;# first decode digest back into state tuples&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;originalDigest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+    &lt;span class=&quot;c&quot;&gt;# generate a seed md5 object&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;spoof&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;md5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+    &lt;span class=&quot;c&quot;&gt;# seed the count variable for calculation of index, padLen, and bits&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;spoof&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;count&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;originalLen&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;3&lt;/span&gt;
+
+    &lt;span class=&quot;c&quot;&gt;# calculate some variables to generate the original padding&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;index&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;spoof&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;count&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x3f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;padLen&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;56&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;index&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;56&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;120&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;bits&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Encode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;spoof&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;count&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xffffffffL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;spoof&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;count&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+    &lt;span class=&quot;c&quot;&gt;# construct the original padding&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;padding&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PADDING&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;padLen&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+
+    &lt;span class=&quot;c&quot;&gt;# augment the count with the new padding and trailing bits&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;spoof&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;count&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;padding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;3&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;spoof&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;count&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bits&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;3&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;spoof&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;state&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;
+
+    &lt;span class=&quot;c&quot;&gt;# run an update&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;spoof&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;update&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;spoofMessage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+    &lt;span class=&quot;c&quot;&gt;# We now have a digest of the original secret + message + some_padding&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;spoof&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;digest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;padding&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bits&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The code has a dependency on a pure-python implementation of the md5 algorithm that I've packaged it together with &lt;a href=&quot;/media/3006/spoof_md5.py.txt&quot;&gt;the source code&lt;/a&gt;. If you want to try it out, download the file and run this test function (also included in the file):&lt;/p&gt;
+&lt;div class=&quot;codehilite&quot;&gt;&lt;pre&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;test_spoofing&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;():&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;originalMsg&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;secret&amp;quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;my message&amp;quot;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;appendedMsg&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;my message extension&amp;quot;&lt;/span&gt;
+
+    &lt;span class=&quot;c&quot;&gt;# This is the signature that a legitimate user sends&lt;/span&gt;
+    &lt;span class=&quot;c&quot;&gt;# over the wire in clear text. &lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;originalSignature&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;md5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;originalMsg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;digest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+    &lt;span class=&quot;c&quot;&gt;# This is how an attacker would spoof the signature where,&lt;/span&gt;
+    &lt;span class=&quot;c&quot;&gt;# the message ==  originalMsg + padbits + appendedMsg .&lt;/span&gt;
+    &lt;span class=&quot;c&quot;&gt;# Notice that this method implies that the attacker&lt;/span&gt;
+    &lt;span class=&quot;c&quot;&gt;# knows the original length of the &amp;quot;secret&amp;quot; ... &lt;/span&gt;
+    &lt;span class=&quot;c&quot;&gt;# Most apis such as Flickr assign secrets that are of&lt;/span&gt;
+    &lt;span class=&quot;c&quot;&gt;# uniform length for all of their api users.&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;spoofSignature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;padbits&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;spoof_digest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;originalSignature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;originalMsg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;appendedMsg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+    &lt;span class=&quot;c&quot;&gt;# This is how a legitimate user would construct the&lt;/span&gt;
+    &lt;span class=&quot;c&quot;&gt;# a signature when message == originalMsg + padbits + appendedMsg&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;testSignature&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;md5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;originalMsg&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;padbits&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;appendedMsg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;digest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+    &lt;span class=&quot;c&quot;&gt;# make sure the spoof signature and the test signature match.&lt;/span&gt;
+    &lt;span class=&quot;c&quot;&gt;# if, this passes, we&amp;#39;ve successfully constructed a spoofed message&lt;/span&gt;
+    &lt;span class=&quot;c&quot;&gt;# of the form: secret + orginal_message + padding + appended_message&lt;/span&gt;
+    &lt;span class=&quot;c&quot;&gt;# without actually knowing the secret.&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;assert&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;testSignature&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;spoofSignature&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt; Information in this blog is meant for educational purposes only! &lt;/strong&gt;&lt;/p&gt;
+</content>
+
+ </entry>
+ 
+ <entry>
+   <title>Bashmarks: Directory Bookmarks in the Shell</title>
+   <link href="http://blog.everyhue.me/posts/bashmarks-directory-bookmarks/"/>
+   <updated>2009-09-10T00:00:00-07:00</updated>
+   <id>http://blog.everyhue.me/posts/bashmarks-directory-bookmarks</id>
+   
+   <category term="programming" />
+   
+   <category term="bash" />
+   
+
+   <content type="html">&lt;!-- End Meta --&gt;
+&lt;p&gt;&lt;strong&gt;EDIT 2010-07-01&lt;/strong&gt; : This post is left up for context / historical posterity. I've packaged up a shell script to allow you to save and jump to commonly used directories. It's called &lt;a href=&quot;https://github.com/huyng/bashmarks&quot;&gt;bashmarks&lt;/a&gt; and it has tab completion functionality built-in. Visit the link below to learn more.
+
+&lt;h3&gt;&lt;a href=&quot;https://github.com/huyng/bashmarks&quot;&gt;Bashmarks&lt;/a&gt;&lt;/h3&gt;
+&lt;br&gt;
+&lt;p&gt;Do not use the stuff below&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;Before I wrote this script, It felt like I spent half of my time in terminal cd-ing around to various directories. If you're like me, placing this snippet into your .bashrc file will save you tons of time each and every single day:&lt;/p&gt;
+&lt;div class=&quot;codehilite&quot;&gt;&lt;pre&gt;# Bash Directory Bookmarks
+alias m1='alias g1=&amp;quot;cd `pwd`&amp;quot;'
+alias m2='alias g2=&amp;quot;cd `pwd`&amp;quot;'
+alias m3='alias g3=&amp;quot;cd `pwd`&amp;quot;'
+alias m4='alias g4=&amp;quot;cd `pwd`&amp;quot;'
+alias m5='alias g5=&amp;quot;cd `pwd`&amp;quot;'
+alias m6='alias g6=&amp;quot;cd `pwd`&amp;quot;'
+alias m7='alias g7=&amp;quot;cd `pwd`&amp;quot;'
+alias m8='alias g8=&amp;quot;cd `pwd`&amp;quot;'
+alias m9='alias g9=&amp;quot;cd `pwd`&amp;quot;'
+alias mdump='alias|grep -e &amp;quot;alias g[0-9]&amp;quot;|grep -v &amp;quot;alias m&amp;quot; &amp;gt; ~/.bookmarks'
+alias lma='alias | grep -e &amp;quot;alias g[0-9]&amp;quot;|grep -v &amp;quot;alias m&amp;quot;|sed &amp;quot;s/alias //&amp;quot;'
+touch ~/.bookmarks
+source ~/.bookmarks&lt;/pre&gt;&lt;/div&gt;
+&lt;!--more--&gt;
+&lt;h4&gt;Directory Bookmark Usage&lt;/h4&gt;
+&lt;p&gt;With this in place, your bash shell will have the ability to set and retrieve directory bookmarks. Let's say you're in a folder that you visit a hundreds of times per day. Run one of the &quot;m&quot; (a.k.a &lt;em&gt;mark&lt;/em&gt;) commands inside the directory to create a bookmark. Here's an example:&lt;/p&gt;
+&lt;div class=&quot;codehilite&quot;&gt;&lt;pre&gt;# This will create a bookmark for the /var/www directory
+user@host[/var/www/] : m1&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Now whenever you want to &lt;em&gt;cd&lt;/em&gt; into that directory, you can run the corresponding &quot;g&quot; (a.k.a &lt;em&gt;goto mark&lt;/em&gt;) command. &lt;/p&gt;
+&lt;div class=&quot;codehilite&quot;&gt;&lt;pre&gt;# This will cd into /var/www
+user@host[/etc/apache2] : g1&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In other words the &lt;em&gt;m1&lt;/em&gt; command will set the &lt;em&gt;g1&lt;/em&gt; bookmark, the &lt;em&gt;m2&lt;/em&gt; command will set the &lt;em&gt;g2&lt;/em&gt; bookmark, and so on ... If you don't want to keep track of these bookmarks in your head, you'll be glad to hear that the &quot;lma&quot; (a.k.a &quot;list marks &quot;) command can show you all of your current bookmarks like so:&lt;/p&gt;
+&lt;div class=&quot;codehilite&quot;&gt;&lt;pre&gt;user@host[/usr/local/] : lma
+g1='cd /var/www/'
+g2='cd /etc/'&lt;/pre&gt;&lt;/div&gt;
+&lt;h4&gt;Persisting the Bookmarks&lt;/h4&gt;
+&lt;p&gt;If you want to preserve your bookmarks for the next time you log in, execute the &lt;em&gt;mdump&lt;/em&gt; command which will store the bookmarks into a file called &lt;em&gt;.bookmarks&lt;/em&gt; under your HOME directory. Keep in mind that if you do not run this command your bookmarks will be forgotten once you log out of the shell.&lt;/p&gt;
+</content>
+
+ </entry>
+ 
+ <entry>
+   <title>Toward an Ergonomic Vim Setup</title>
+   <link href="http://blog.everyhue.me/posts/toward-an-ergonomic-vim-setup/"/>
+   <updated>2009-07-21T00:00:00-07:00</updated>
+   <id>http://blog.everyhue.me/posts/toward-an-ergonomic-vim-setup</id>
+   
+   <category term="python" />
+   
+
+   <content type="html">&lt;span class=&quot;markdownOutput&quot;&gt;
+&lt;p&gt;Here&amp;#8217;s a brief tip: &lt;strong&gt;Rebind your ctrl key to capslock&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;Save yourself from the pain. The contorted positions we developers strain our hands into will eventually break them - Emacs &amp;amp; Textmate users, you know what I&amp;#8217;m talking about. Do yourself a favor and rebind your control key to capslock. You can do this under MacOSX by going to &lt;em&gt;System Preferences&lt;/em&gt; &gt; &lt;em&gt;Keyboard &amp;amp; Mouse&lt;/em&gt; &gt; &lt;em&gt;Keyboard&lt;/em&gt; &gt; &lt;em&gt;Modifier Keys&lt;/em&gt;. Change the settings to look like the following and you&amp;#8217;re set.&lt;/p&gt;
+&lt;p&gt;&lt;img id=&quot;keyboardandmouse&quot; src=&quot;/media/3008/keyboardandmouse.png&quot; alt=&quot;keyboardandmouse&quot; title=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;/span&gt;
+</content>
+
+ </entry>
+ 
+
+</feed>

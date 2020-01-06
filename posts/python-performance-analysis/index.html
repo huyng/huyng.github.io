@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>A Guide to Analyzing Python Performance &laquo; Searching Gradients with Huy</title>
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" href="/atom.xml" />
+    <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/syntax.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css">
+    <!-- <link href="https://fonts.googleapis.com/css?family=Lora&display=swap" rel="stylesheet"> -->
+    <link href="https://fonts.googleapis.com/css?family=Lora|Rock+Salt&display=swap" rel="stylesheet">
+
+
+
+
+    <!-- fonts -->
+    <link href="//netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
+
+    <!-- javascript -->
+    <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
+
+    <!-- google analytics -->
+    <script type="text/javascript">
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-6813218-1']);
+        _gaq.push(['_trackPageview']);
+
+        // count visits longer than 15 secs as
+        setTimeout("_gaq.push(['_trackEvent', '15_seconds', 'read'])", 15000);
+
+        (function () {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+
+</head>
+
+<body>
+    <div class="container">
+        <br>
+        <div class="site-title"><a href="/">Searching Gradients</a></div>
+        <br>
+        <div id="nav-container">
+            <ul class="nav" style="width:100%;">
+                <li><a href="/">
+                        <span style="color:#444"><i class="icon-align-justify icon-medium"></i></span>
+                        posts</a></li>
+                <li><a href="https://everyhue.me/">
+                        <span style="color:#444"><i class="icon-gamepad icon-medium"></i></span>
+                        about</a></li>
+                <li class="social-media-nav">
+                    <a id="twitter" href="http://twitter.com/huyng">
+                        <span style="color:#444"><i class="icon-twitter icon-medium"></i></span>
+                        twitter
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="github" href="https://github.com/huyng">
+                        <span style="color:#444"><i class="icon-github icon-medium"></i></span>
+                        github
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="rss" href="/atom.xml">
+                        <span style="color:#444"><i class="icon-rss-sign icon-medium"></i></span>
+                        feed
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="clear"></div>
+
+        <br>
+        <center>
+            <img src="/static/images/welder.jpg" alt="Header photo - welder" width="100%" />
+        </center>
+
+        <div id="content-container">
+            <!-- POST -->
+
+<br>
+<br>
+<!-- <div class="header-rule"></div> -->
+<div class="post content">
+    <div class="post-date">03 Sep 2013</div><br><br>
+
+    
+    <h2 class="post-title"><a href="/posts/python-performance-analysis/">A Guide to Analyzing Python Performance</a></h2>
+
+    <br>
+    <div class="post-content">
+    <p>While it’s not always the case that every Python program you write will require a rigorous performance analysis, it is reassuring to know that there are a wide variety of tools in Python’s ecosystem that one can turn to when the time arises.</p>
+
+<p>Analyzing a program’s performance boils down to answering 4 basic questions:</p>
+
+<ol>
+  <li>How fast is it running?</li>
+  <li>Where are the speed bottlenecks?</li>
+  <li>How much memory is it using?</li>
+  <li>Where is memory leaking?</li>
+</ol>
+
+<p>Below, we’ll dive into the details of answering these questions using some awesome tools.</p>
+
+<h3 id="coarse-grain-timing-with-time">Coarse grain timing with time</h3>
+
+<p>Let’s begin by using a quick and dirty method of timing our code: the good old unix utility <code class="highlighter-rouge">time</code>.</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span><span class="nb">time </span>python yourprogram.py
+
+real    0m1.028s
+user    0m0.001s
+sys     0m0.003s</code></pre></figure>
+
+<p>The meaning between the three output measurements are detailed in this <a href="http://stackoverflow.com/questions/556405/what-do-real-user-and-sys-mean-in-the-output-of-time1">stackoverflow article</a>, but in short</p>
+
+<ul>
+  <li>real - refers to the actual elasped time</li>
+  <li>user - refers to the amount of cpu time spent outside of kernel</li>
+  <li>sys - refers to the amount of cpu time spent inside kernel specific functions</li>
+</ul>
+
+<p>You can get a sense of how many cpu cycles your program used up regardless of other programs running on the system by adding together the <em>sys</em> and <em>user</em> times.</p>
+
+<p>If the sum of <em>sys</em> and <em>user</em> times is much less than <em>real</em> time, then you can guess that most your program’s performance issues are most likely related to IO waits.</p>
+
+<h3 id="fine-grain-timing-with-a-timing-context-manager">Fine grain timing with a timing context manager</h3>
+
+<p>Our next technique involves direct instrumentation of the code to get access to finer grain timing information. Here’s a small snippet I’ve found invaluable for making ad-hoc timing measurements:</p>
+
+<p><code class="highlighter-rouge">timer.py</code></p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">time</span>
+
+<span class="k">class</span> <span class="nc">Timer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+
+    <span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">secs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">msecs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">secs</span> <span class="o">*</span> <span class="mi">1000</span>  <span class="c1"># millisecs
+</span>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">'elapsed time: </span><span class="si">%</span><span class="s">f ms'</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">msecs</span></code></pre></figure>
+
+<p>In order to use it, wrap blocks of code that you want to time with Python’s <code class="highlighter-rouge">with</code> keyword and this <code class="highlighter-rouge">Timer</code> context manager. It will take care of starting the timer when your code block begins execution and stopping the timer when your code block ends.</p>
+
+<p>Here’s an example use of the snippet:</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">from</span> <span class="nn">timer</span> <span class="kn">import</span> <span class="n">Timer</span>
+<span class="kn">from</span> <span class="nn">redis</span> <span class="kn">import</span> <span class="n">Redis</span>
+<span class="n">rdb</span> <span class="o">=</span> <span class="n">Redis</span><span class="p">()</span>
+
+<span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
+    <span class="n">rdb</span><span class="o">.</span><span class="n">lpush</span><span class="p">(</span><span class="s">"foo"</span><span class="p">,</span> <span class="s">"bar"</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">"=&gt; elasped lpush: </span><span class="si">%</span><span class="s">s s"</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span>
+
+<span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
+    <span class="n">rdb</span><span class="o">.</span><span class="n">lpop</span><span class="p">(</span><span class="s">"foo"</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">"=&gt; elasped lpop: </span><span class="si">%</span><span class="s">s s"</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">secs</span></code></pre></figure>
+
+<p>I’ll often log the outputs of these timers to a file in order to see how my program’s performance evolves over time.</p>
+
+<h3 id="line-by-line-timing-and-execution-frequency-with-a-profiler">Line-by-line timing and execution frequency with a profiler</h3>
+
+<p>Robert Kern has a nice project called <a href="http://packages.python.org/line_profiler/">line_profiler</a> which I often use to see how fast and how often each line of code is running in my scripts.</p>
+
+<p>To use it, you’ll need to install the python package via pip:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>pip <span class="nb">install </span>line_profiler</code></pre></figure>
+
+<p>Once installed you’ll have access to a new module called “line_profiler” as well as an executable script “kernprof.py”.</p>
+
+<p>To use this tool, first modify your source code by decorating the function you want to measure with the <code class="highlighter-rouge">@profile</code> decorator. Don’t worry, you don’t have to import anyting in order to use this decorator. The <code class="highlighter-rouge">kernprof.py</code> script  automatically injects it into your script’s runtime during execution.</p>
+
+<p><code class="highlighter-rouge">primes.py</code></p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">@</span><span class="n">profile</span>
+<span class="k">def</span> <span class="nf">primes</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">n</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">n</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">s</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">mroot</span> <span class="o">=</span> <span class="n">n</span> <span class="o">**</span> <span class="mf">0.5</span>
+    <span class="n">half</span><span class="o">=</span><span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="mi">1</span>
+    <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">m</span><span class="o">=</span><span class="mi">3</span>
+    <span class="k">while</span> <span class="n">m</span> <span class="o">&lt;=</span> <span class="n">mroot</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+            <span class="n">j</span><span class="o">=</span><span class="p">(</span><span class="n">m</span><span class="o">*</span><span class="n">m</span><span class="o">-</span><span class="mi">3</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+            <span class="n">s</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="mi">0</span>
+            <span class="k">while</span> <span class="n">j</span><span class="o">&lt;</span><span class="n">half</span><span class="p">:</span>
+                <span class="n">s</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="mi">0</span>
+                <span class="n">j</span><span class="o">+=</span><span class="n">m</span>
+        <span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span>
+        <span class="n">m</span><span class="o">=</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span><span class="o">+</span><span class="mi">3</span>
+    <span class="k">return</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">s</span> <span class="k">if</span> <span class="n">x</span><span class="p">]</span>
+<span class="n">primes</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span></code></pre></figure>
+
+<p>Once you’ve gotten your code setup with the <code class="highlighter-rouge">@profile</code> decorator, use <code class="highlighter-rouge">kernprof.py</code> to run your script.</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>kernprof.py <span class="nt">-l</span> <span class="nt">-v</span> fib.py</code></pre></figure>
+
+<p>The <code class="highlighter-rouge">-l</code> option tells kernprof to inject the <code class="highlighter-rouge">@profile</code> decorator into your script’s builtins, and <code class="highlighter-rouge">-v</code> tells kernprof to display timing information once you’re script finishes. Here’s one the output should look like for the above script:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Wrote profile results to primes.py.lprof
+Timer unit: 1e-06 s
+
+File: primes.py
+Function: primes at line 2
+Total time: 0.00019 s
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+     2                                           @profile
+     3                                           def primes(n):
+     4         1            2      2.0      1.1      if n==2:
+     5                                                   return [2]
+     6         1            1      1.0      0.5      elif n&lt;2:
+     7                                                   return []
+     8         1            4      4.0      2.1      s=range(3,n+1,2)
+     9         1           10     10.0      5.3      mroot = n ** 0.5
+    10         1            2      2.0      1.1      half=(n+1)/2-1
+    11         1            1      1.0      0.5      i=0
+    12         1            1      1.0      0.5      m=3
+    13         5            7      1.4      3.7      while m &lt;= mroot:
+    14         4            4      1.0      2.1          if s[i]:
+    15         3            4      1.3      2.1              j=(m*m-3)/2
+    16         3            4      1.3      2.1              s[j]=0
+    17        31           31      1.0     16.3              while j&lt;half:
+    18        28           28      1.0     14.7                  s[j]=0
+    19        28           29      1.0     15.3                  j+=m
+    20         4            4      1.0      2.1          i=i+1
+    21         4            4      1.0      2.1          m=2*i+3
+    22        50           54      1.1     28.4      return [2]+[x for x in s if x]
+</code></pre></div></div>
+
+<p>Look for lines with a high amount of hits or a high time interval. These are the areas where optimizations can yield the greatest improvements.</p>
+
+<h3 id="how-much-memory-does-it-use">How much memory does it use?</h3>
+
+<p>Now that we have a good grasp on timing our code, let’s move on to figuring out how much memory our programs are using. Fortunately for us, Fabian Pedregosa has implemented a nice <a href="https://github.com/fabianp/memory_profiler">memory profiler</a> modeled after Robert Kern’s line_profiler.</p>
+
+<p>First install it via pip:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>pip <span class="nb">install</span> <span class="nt">-U</span> memory_profiler
+<span class="nv">$ </span>pip <span class="nb">install </span>psutil</code></pre></figure>
+
+<p>(Installing the <code class="highlighter-rouge">psutil</code> package here is recommended because it greatly improves the performance of the memory_profiler).</p>
+
+<p>Like line_profiler, memory_profiler requires that you decorate your function of interest with an <code class="highlighter-rouge">@profile</code> decorator like so:</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">@</span><span class="n">profile</span>
+<span class="k">def</span> <span class="nf">primes</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="o">...</span></code></pre></figure>
+
+<p>To see how much memory your function uses run the following:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>python <span class="nt">-m</span> memory_profiler primes.py</code></pre></figure>
+
+<p>You should see output that looks like this once your program exits:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Filename: primes.py
+
+Line #    Mem usage  Increment   Line Contents
+==============================================
+     2                           @profile
+     3    7.9219 MB  0.0000 MB   def primes(n):
+     4    7.9219 MB  0.0000 MB       if n==2:
+     5                                   return [2]
+     6    7.9219 MB  0.0000 MB       elif n&lt;2:
+     7                                   return []
+     8    7.9219 MB  0.0000 MB       s=range(3,n+1,2)
+     9    7.9258 MB  0.0039 MB       mroot = n ** 0.5
+    10    7.9258 MB  0.0000 MB       half=(n+1)/2-1
+    11    7.9258 MB  0.0000 MB       i=0
+    12    7.9258 MB  0.0000 MB       m=3
+    13    7.9297 MB  0.0039 MB       while m &lt;= mroot:
+    14    7.9297 MB  0.0000 MB           if s[i]:
+    15    7.9297 MB  0.0000 MB               j=(m*m-3)/2
+    16    7.9258 MB -0.0039 MB               s[j]=0
+    17    7.9297 MB  0.0039 MB               while j&lt;half:
+    18    7.9297 MB  0.0000 MB                   s[j]=0
+    19    7.9297 MB  0.0000 MB                   j+=m
+    20    7.9297 MB  0.0000 MB           i=i+1
+    21    7.9297 MB  0.0000 MB           m=2*i+3
+    22    7.9297 MB  0.0000 MB       return [2]+[x for x in s if x]
+</code></pre></div></div>
+
+<h3 id="ipython-shortcuts-for-line_profiler-and-memory_profiler">IPython shortcuts for line_profiler and memory_profiler</h3>
+
+<p>A little known feature of <code class="highlighter-rouge">line_profiler</code> and <code class="highlighter-rouge">memory_profiler</code> is that both programs have shortcut commands accessible from within IPython. All you have to do is type the following within an IPython session:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>%load_ext memory_profiler
+%load_ext line_profiler
+</code></pre></div></div>
+
+<p>Upon doing so you’ll have access to the magic commands <code class="highlighter-rouge">%lprun</code> and <code class="highlighter-rouge">%mprun</code> which behave similarly to their command-line counterparts. The major difference here is that you won’t need to decorate your to-be-profiled functions with the <code class="highlighter-rouge">@profile</code> decorator. Just go ahead and run the profiling directly within your IPython session like so:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>In [1]: from primes import primes
+In [2]: %mprun -f primes primes(1000)
+In [3]: %lprun -f primes primes(1000)
+</code></pre></div></div>
+
+<p>This can save you a lot of time and effort since none of your source code needs to be modified in order to use these profiling commands.</p>
+
+<h3 id="wheres-the-memory-leak">Where’s the memory leak?</h3>
+
+<p>The cPython interpreter uses reference counting as it’s main method of keeping track of memory. This means that every object contains a counter, which is incremented when a reference to the object is stored somewhere, and decremented when a reference to it is deleted. When the counter reaches zero, the cPython interpreter knows that the object is no longer in use so it deletes the object and deallocates the occupied memory.</p>
+
+<p>A memory leak can often occur in your program if references to objects are held even though the object is no longer in use.</p>
+
+<p>The quickest way to find these “memory leaks” is to use an awesome tool called <a href="http://mg.pov.lt/objgraph/">objgraph</a> written by Marius Gedminas. This tool allows you to see the number of objects in memory and also locate all the different places in your code that hold references to these objects.</p>
+
+<p>To get started, first install <code class="highlighter-rouge">objgraph</code>:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">pip <span class="nb">install </span>objgraph</code></pre></figure>
+
+<p>Once you have this tool installed, insert into your code a statement to invoke the debugger:</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">pdb</span><span class="p">;</span> <span class="n">pdb</span><span class="o">.</span><span class="n">set_trace</span><span class="p">()</span></code></pre></figure>
+
+<h5 id="which-objects-are-the-most-common">Which objects are the most common?</h5>
+
+<p>At run time, you can inspect the top 20 most prevalent objects in your program by running:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(pdb) import objgraph
+(pdb) objgraph.show_most_common_types()
+
+MyBigFatObject             20000
+tuple                      16938
+function                   4310
+dict                       2790
+wrapper_descriptor         1181
+builtin_function_or_method 934
+weakref                    764
+list                       634
+method_descriptor          507
+getset_descriptor          451
+type                       439
+</code></pre></div></div>
+
+<h5 id="which-objects-have-been-added-or-deleted">Which objects have been added or deleted?</h5>
+
+<p>We can also see which objects have been added or deleted between two points in time:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(pdb) import objgraph
+(pdb) objgraph.show_growth()
+.
+.
+.
+(pdb) objgraph.show_growth()   # this only shows objects that has been added or deleted since last show_growth() call
+
+traceback                4        +2
+KeyboardInterrupt        1        +1
+frame                   24        +1
+list                   667        +1
+tuple                16969        +1
+</code></pre></div></div>
+
+<h5 id="what-is-referencing-this-leaky-object">What is referencing this leaky object?</h5>
+
+<p>Continuing down this route, we can also see where references to any given object is being held. Let’s take as an example the simple program below:</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="p">{</span><span class="s">"a"</span><span class="p">:</span><span class="n">x</span><span class="p">}]</span>
+<span class="kn">import</span> <span class="nn">pdb</span><span class="p">;</span> <span class="n">pdb</span><span class="o">.</span><span class="n">set_trace</span><span class="p">()</span></code></pre></figure>
+
+<p>To see what is holding a reference to the variable <code class="highlighter-rouge">x</code>, run the <code class="highlighter-rouge">objgraph.show_backref()</code> function:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(pdb) import objgraph
+(pdb) objgraph.show_backref([x], filename="/tmp/backrefs.png")
+</code></pre></div></div>
+
+<p>The output of that command should be a PNG image stored at <code class="highlighter-rouge">/tmp/backrefs.png</code> and it should look something like this:</p>
+
+<p><img src="/media/3011/backrefs.png" alt="back refrences" /></p>
+
+<p>The box at the bottom with red lettering is our object of interest. We can see that it’s referenced by the symbol <code class="highlighter-rouge">x</code> once and by the list <code class="highlighter-rouge">y</code> three times. If <code class="highlighter-rouge">x</code> is the object causing a memory leak, we can use this method to see why it’s not automatically being deallocated by tracking down all of its references.</p>
+
+<p>So to review, <a href="http://mg.pov.lt/objgraph/">objgraph</a> allows us to:</p>
+
+<ul>
+  <li>show the top N objects occupying our python program’s memory</li>
+  <li>show what objects have been deleted or added over a period of time</li>
+  <li>show all references to a given object in our script</li>
+</ul>
+
+<h3 id="effort-vs-precision">Effort vs precision</h3>
+
+<p>In this post, I’ve shown you how to use several tools to analyze a python program’s performance. Armed with these tools and techniques you should have all the information required to track down most memory leaks as well as identify speed bottlenecks in a Python program.</p>
+
+<p>As with many other topics, running a performance analysis means balancing the tradeoffs between effort and precision. When in doubt, implement the simplest solution that will suit your current needs.</p>
+
+<h5 id="refrences">Refrences</h5>
+
+<ul>
+  <li><a href="http://stackoverflow.com/questions/556405/what-do-real-user-and-sys-mean-in-the-output-of-time1">stack overflow - time explained</a></li>
+  <li><a href="http://packages.python.org/line_profiler/">line_profiler</a></li>
+  <li><a href="https://github.com/fabianp/memory_profiler">memory_profiler</a></li>
+  <li><a href="http://mg.pov.lt/objgraph/">objgraph</a></li>
+</ul>
+
+
+    </div>
+
+    <br>
+    <br>
+
+    <div class="pitch">
+        Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
+    </div>
+
+    <br>
+    <br>
+    <br>
+
+    <!-- related posts -->
+    <div id="related">
+        <h3>Related Posts</h3>
+            
+            <div class="related-post">
+              <div class="related-post-date">26 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-with-vantage-point-trees/">Similarity search 101 - Part 2 (search with vp-trees)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">19 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-part-1/">Similarity search 101 - Part 1 (overview)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">14 Dec 2013</div>
+              <div class="related-post-title"><a href="/posts/faster-numpy-dot-product/">Faster Numpy Dot Product for Multi-dimensional Arrays</a></div>
+              <div class="clear"></div>
+            </div>
+            
+        </table>
+    </div>
+    <br> <br> <br>
+
+</div>
+
+<div class="header-rule"></div>
+<div class="content">
+
+
+    <!-- discussion -->
+    
+
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        var disqus_shortname = 'huyng';
+        var disqus_identifier = 'http://www.huyng.com/posts/python-performance-analysis/';
+        var disqus_url = 'http://www.huyng.com/posts/python-performance-analysis/';
+
+        
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+        
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    
+
+</div>
+<!-- /POST -->
+        </div><!-- /content-container -->
+        <div class="clear"></div>
+        <br>
+        <br>
+        <br>
+    </div>
+
+
+    <!-- SCRIPTS -->
+    <script type="text/javascript"
+        src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="/static/bower_components/pixastic/pixastic.custom.js"></script>
+
+    <!-- colorbox -->
+    <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $(".post-content p img")
+                .colorbox({
+                    // no transition
+                    transition: "none",
+
+                    // use image src as href
+                    href: function () {
+                        return this.getAttribute('src');
+                    },
+
+                    title: function () {
+                        return this.getAttribute('alt');
+                    },
+
+
+                    // slightly dark bg
+                    opacity: 1,
+
+                    // set max widths x height
+                    scalePhotos: true,
+                    maxWidth: "85%",
+                    maxHeight: "80%",
+
+                    // make it so overlay is fixed
+                    fixed: true,
+
+                    // group photos in posts
+                    rel: "gallery"
+                });
+        });
+    </script>
+
+    <!-- page specific scripts -->
+    
+
+    
+</body>
+
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Bashmarks: Directory Bookmarks in the Shell &laquo; Searching Gradients with Huy</title>
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" href="/atom.xml" />
+    <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/syntax.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css">
+    <!-- <link href="https://fonts.googleapis.com/css?family=Lora&display=swap" rel="stylesheet"> -->
+    <link href="https://fonts.googleapis.com/css?family=Lora|Rock+Salt&display=swap" rel="stylesheet">
+
+
+
+
+    <!-- fonts -->
+    <link href="//netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
+
+    <!-- javascript -->
+    <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
+
+    <!-- google analytics -->
+    <script type="text/javascript">
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-6813218-1']);
+        _gaq.push(['_trackPageview']);
+
+        // count visits longer than 15 secs as
+        setTimeout("_gaq.push(['_trackEvent', '15_seconds', 'read'])", 15000);
+
+        (function () {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+
+</head>
+
+<body>
+    <div class="container">
+        <br>
+        <div class="site-title"><a href="/">Searching Gradients</a></div>
+        <br>
+        <div id="nav-container">
+            <ul class="nav" style="width:100%;">
+                <li><a href="/">
+                        <span style="color:#444"><i class="icon-align-justify icon-medium"></i></span>
+                        posts</a></li>
+                <li><a href="https://everyhue.me/">
+                        <span style="color:#444"><i class="icon-gamepad icon-medium"></i></span>
+                        about</a></li>
+                <li class="social-media-nav">
+                    <a id="twitter" href="http://twitter.com/huyng">
+                        <span style="color:#444"><i class="icon-twitter icon-medium"></i></span>
+                        twitter
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="github" href="https://github.com/huyng">
+                        <span style="color:#444"><i class="icon-github icon-medium"></i></span>
+                        github
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="rss" href="/atom.xml">
+                        <span style="color:#444"><i class="icon-rss-sign icon-medium"></i></span>
+                        feed
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="clear"></div>
+
+        <br>
+        <center>
+            <img src="/static/images/welder.jpg" alt="Header photo - welder" width="100%" />
+        </center>
+
+        <div id="content-container">
+            <!-- POST -->
+
+<br>
+<br>
+<!-- <div class="header-rule"></div> -->
+<div class="post content">
+    <div class="post-date">10 Sep 2009</div><br><br>
+
+    
+    <h2 class="post-title"><a href="/posts/bashmarks-directory-bookmarks/">Bashmarks: Directory Bookmarks in the Shell</a></h2>
+
+    <br>
+    <div class="post-content">
+    <!-- End Meta -->
+<p><strong>EDIT 2010-07-01</strong> : This post is left up for context / historical posterity. I've packaged up a shell script to allow you to save and jump to commonly used directories. It's called <a href="https://github.com/huyng/bashmarks">bashmarks</a> and it has tab completion functionality built-in. Visit the link below to learn more.
+
+<h3><a href="https://github.com/huyng/bashmarks">Bashmarks</a></h3>
+<br>
+<p>Do not use the stuff below</p>
+<hr />
+<p>Before I wrote this script, It felt like I spent half of my time in terminal cd-ing around to various directories. If you're like me, placing this snippet into your .bashrc file will save you tons of time each and every single day:</p>
+<div class="codehilite"><pre># Bash Directory Bookmarks
+alias m1='alias g1=&quot;cd `pwd`&quot;'
+alias m2='alias g2=&quot;cd `pwd`&quot;'
+alias m3='alias g3=&quot;cd `pwd`&quot;'
+alias m4='alias g4=&quot;cd `pwd`&quot;'
+alias m5='alias g5=&quot;cd `pwd`&quot;'
+alias m6='alias g6=&quot;cd `pwd`&quot;'
+alias m7='alias g7=&quot;cd `pwd`&quot;'
+alias m8='alias g8=&quot;cd `pwd`&quot;'
+alias m9='alias g9=&quot;cd `pwd`&quot;'
+alias mdump='alias|grep -e &quot;alias g[0-9]&quot;|grep -v &quot;alias m&quot; &gt; ~/.bookmarks'
+alias lma='alias | grep -e &quot;alias g[0-9]&quot;|grep -v &quot;alias m&quot;|sed &quot;s/alias //&quot;'
+touch ~/.bookmarks
+source ~/.bookmarks</pre></div>
+<!--more-->
+<h4>Directory Bookmark Usage</h4>
+<p>With this in place, your bash shell will have the ability to set and retrieve directory bookmarks. Let's say you're in a folder that you visit a hundreds of times per day. Run one of the "m" (a.k.a <em>mark</em>) commands inside the directory to create a bookmark. Here's an example:</p>
+<div class="codehilite"><pre># This will create a bookmark for the /var/www directory
+user@host[/var/www/] : m1</pre></div>
+<p>Now whenever you want to <em>cd</em> into that directory, you can run the corresponding "g" (a.k.a <em>goto mark</em>) command. </p>
+<div class="codehilite"><pre># This will cd into /var/www
+user@host[/etc/apache2] : g1</pre></div>
+<p>In other words the <em>m1</em> command will set the <em>g1</em> bookmark, the <em>m2</em> command will set the <em>g2</em> bookmark, and so on ... If you don't want to keep track of these bookmarks in your head, you'll be glad to hear that the "lma" (a.k.a "list marks ") command can show you all of your current bookmarks like so:</p>
+<div class="codehilite"><pre>user@host[/usr/local/] : lma
+g1='cd /var/www/'
+g2='cd /etc/'</pre></div>
+<h4>Persisting the Bookmarks</h4>
+<p>If you want to preserve your bookmarks for the next time you log in, execute the <em>mdump</em> command which will store the bookmarks into a file called <em>.bookmarks</em> under your HOME directory. Keep in mind that if you do not run this command your bookmarks will be forgotten once you log out of the shell.</p>
+
+    </div>
+
+    <br>
+    <br>
+
+    <div class="pitch">
+        Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
+    </div>
+
+    <br>
+    <br>
+    <br>
+
+    <!-- related posts -->
+    <div id="related">
+        <h3>Related Posts</h3>
+            
+            <div class="related-post">
+              <div class="related-post-date">26 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-with-vantage-point-trees/">Similarity search 101 - Part 2 (search with vp-trees)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">19 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-part-1/">Similarity search 101 - Part 1 (overview)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">14 Dec 2013</div>
+              <div class="related-post-title"><a href="/posts/faster-numpy-dot-product/">Faster Numpy Dot Product for Multi-dimensional Arrays</a></div>
+              <div class="clear"></div>
+            </div>
+            
+        </table>
+    </div>
+    <br> <br> <br>
+
+</div>
+
+<div class="header-rule"></div>
+<div class="content">
+
+
+    <!-- discussion -->
+    
+
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        var disqus_shortname = 'huyng';
+        var disqus_identifier = '492 http://www.huyng.com/?p=492';
+        var disqus_url = 'http://www.huyng.com/posts/bashmarks-directory-bookmarks/';
+
+        
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+        
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    
+
+</div>
+<!-- /POST -->
+        </div><!-- /content-container -->
+        <div class="clear"></div>
+        <br>
+        <br>
+        <br>
+    </div>
+
+
+    <!-- SCRIPTS -->
+    <script type="text/javascript"
+        src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="/static/bower_components/pixastic/pixastic.custom.js"></script>
+
+    <!-- colorbox -->
+    <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $(".post-content p img")
+                .colorbox({
+                    // no transition
+                    transition: "none",
+
+                    // use image src as href
+                    href: function () {
+                        return this.getAttribute('src');
+                    },
+
+                    title: function () {
+                        return this.getAttribute('alt');
+                    },
+
+
+                    // slightly dark bg
+                    opacity: 1,
+
+                    // set max widths x height
+                    scalePhotos: true,
+                    maxWidth: "85%",
+                    maxHeight: "80%",
+
+                    // make it so overlay is fixed
+                    fixed: true,
+
+                    // group photos in posts
+                    rel: "gallery"
+                });
+        });
+    </script>
+
+    <!-- page specific scripts -->
+    
+
+    
+</body>
+
+</html>

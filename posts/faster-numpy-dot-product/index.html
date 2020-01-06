@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Faster Numpy Dot Product for Multi-dimensional Arrays &laquo; Searching Gradients with Huy</title>
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" href="/atom.xml" />
+    <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/syntax.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css">
+    <!-- <link href="https://fonts.googleapis.com/css?family=Lora&display=swap" rel="stylesheet"> -->
+    <link href="https://fonts.googleapis.com/css?family=Lora|Rock+Salt&display=swap" rel="stylesheet">
+
+
+
+
+    <!-- fonts -->
+    <link href="//netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
+
+    <!-- javascript -->
+    <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
+
+    <!-- google analytics -->
+    <script type="text/javascript">
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-6813218-1']);
+        _gaq.push(['_trackPageview']);
+
+        // count visits longer than 15 secs as
+        setTimeout("_gaq.push(['_trackEvent', '15_seconds', 'read'])", 15000);
+
+        (function () {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+
+</head>
+
+<body>
+    <div class="container">
+        <br>
+        <div class="site-title"><a href="/">Searching Gradients</a></div>
+        <br>
+        <div id="nav-container">
+            <ul class="nav" style="width:100%;">
+                <li><a href="/">
+                        <span style="color:#444"><i class="icon-align-justify icon-medium"></i></span>
+                        posts</a></li>
+                <li><a href="https://everyhue.me/">
+                        <span style="color:#444"><i class="icon-gamepad icon-medium"></i></span>
+                        about</a></li>
+                <li class="social-media-nav">
+                    <a id="twitter" href="http://twitter.com/huyng">
+                        <span style="color:#444"><i class="icon-twitter icon-medium"></i></span>
+                        twitter
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="github" href="https://github.com/huyng">
+                        <span style="color:#444"><i class="icon-github icon-medium"></i></span>
+                        github
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="rss" href="/atom.xml">
+                        <span style="color:#444"><i class="icon-rss-sign icon-medium"></i></span>
+                        feed
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="clear"></div>
+
+        <br>
+        <center>
+            <img src="/static/images/welder.jpg" alt="Header photo - welder" width="100%" />
+        </center>
+
+        <div id="content-container">
+            <!-- POST -->
+
+<br>
+<br>
+<!-- <div class="header-rule"></div> -->
+<div class="post content">
+    <div class="post-date">14 Dec 2013</div><br><br>
+
+    
+    <h2 class="post-title"><a href="/posts/faster-numpy-dot-product/">Faster Numpy Dot Product for Multi-dimensional Arrays</a></h2>
+
+    <br>
+    <div class="post-content">
+    <p>When installed and linked correctly against a blas implementation like ATLAS or
+OpenBlas, numpy’s <code class="highlighter-rouge">dot</code> product can run incredibly fast. What I hadn’t known until recently is that for some special cases, you can perform dot products an order of magnitude faster just by calling the underlying blas routines directly.</p>
+
+<p>In order to do so, I’ve written a module called <a href="https://gist.github.com/huyng/7969327#file-fastdot-py">fastdot</a>, whose source code is located in a github <a href="https://gist.github.com/huyng/7969327#file-fastdot-py">gist</a>.</p>
+
+<p>The code, in a nutshell, is a wrapper around blas’s generalized matrix-matrix multiplication routines (A.K.A “gemm”). Its main job is to ensure that the arrays that get passed into it are in FORTRAN contiguous order before handing-off the bulk of the work to the underlying blas routines.</p>
+
+<h6 id="performance-comparison-between-dot-product-implementations">Performance comparison between dot product implementations</h6>
+
+<p>I ran a few benchmarks and plotted below the speed differences between <code class="highlighter-rouge">fastdot.dot</code> and <code class="highlighter-rouge">np.dot</code> operating on matrices of varying dimensions and sizes.</p>
+
+<p><img src="/media/3014/dot_time.png" alt="" /></p>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">A shape            B shape     array dims    function       time (s)
+-----------------  ----------  ------------  -----------  ----------
+(8, 55, 55, 1024)  (1024, 92)  4d * 2d       np.dot           2.0168
+(440, 55, 1024)    (1024, 92)  3d * 2d       np.dot           1.9883
+(24200, 1024)      (1024, 92)  2d * 2d       np.dot           0.0944
+
+(8, 55, 55, 1024)  (1024, 92)  4d * 2d       fastdot.dot      0.1187
+(440, 55, 1024)    (1024, 92)  3d * 2d       fastdot.dot      0.0940
+(24200, 1024)      (1024, 92)  2d * 2d       fastdot.dot      0.1342</code></pre></figure>
+
+<p>As you can see <code class="highlighter-rouge">fastdot.dot</code> runs almost <strong>20X</strong> faster than <code class="highlighter-rouge">np.dot</code> when one of your matrices has 3 dimensions or more. But before you start using it everywhere that you need a dot product, do take notice that it runs slightly slower than numpy’s implementation when operating on matrices with 2 dimensions or less.</p>
+
+<p>As a rule of thumb, use fastdot when you know ahead of time that the number of dimensions in your matrices will be larger than 3. It could increase your program’s performace by 20x. Otherwise stick with numpy’s implementation.</p>
+
+
+    </div>
+
+    <br>
+    <br>
+
+    <div class="pitch">
+        Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
+    </div>
+
+    <br>
+    <br>
+    <br>
+
+    <!-- related posts -->
+    <div id="related">
+        <h3>Related Posts</h3>
+            
+            <div class="related-post">
+              <div class="related-post-date">26 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-with-vantage-point-trees/">Similarity search 101 - Part 2 (search with vp-trees)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">19 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-part-1/">Similarity search 101 - Part 1 (overview)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">30 Oct 2013</div>
+              <div class="related-post-title"><a href="/posts/json-streaming-record-data-format/">The JSON Streaming Record (JSRec) data format</a></div>
+              <div class="clear"></div>
+            </div>
+            
+        </table>
+    </div>
+    <br> <br> <br>
+
+</div>
+
+<div class="header-rule"></div>
+<div class="content">
+
+
+    <!-- discussion -->
+    
+
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        var disqus_shortname = 'huyng';
+        var disqus_identifier = 'http://www.huyng.com/posts/faster-numpy-dot-product/';
+        var disqus_url = 'http://www.huyng.com/posts/faster-numpy-dot-product/';
+
+        
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+        
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    
+
+</div>
+<!-- /POST -->
+        </div><!-- /content-container -->
+        <div class="clear"></div>
+        <br>
+        <br>
+        <br>
+    </div>
+
+
+    <!-- SCRIPTS -->
+    <script type="text/javascript"
+        src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="/static/bower_components/pixastic/pixastic.custom.js"></script>
+
+    <!-- colorbox -->
+    <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $(".post-content p img")
+                .colorbox({
+                    // no transition
+                    transition: "none",
+
+                    // use image src as href
+                    href: function () {
+                        return this.getAttribute('src');
+                    },
+
+                    title: function () {
+                        return this.getAttribute('alt');
+                    },
+
+
+                    // slightly dark bg
+                    opacity: 1,
+
+                    // set max widths x height
+                    scalePhotos: true,
+                    maxWidth: "85%",
+                    maxHeight: "80%",
+
+                    // make it so overlay is fixed
+                    fixed: true,
+
+                    // group photos in posts
+                    rel: "gallery"
+                });
+        });
+    </script>
+
+    <!-- page specific scripts -->
+    
+
+    
+</body>
+
+</html>

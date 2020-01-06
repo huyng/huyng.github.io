@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+	<head>
+		<meta name="Author" content="Huy Nguyen      " />
+		<link type="text/css" rel="stylesheet" href="documentation.css         " />
+		<meta name="Date" content="2009-02-03" />
+		<meta name="Format" content="complete" />
+		<title>Writing Effective, Simple Documentation for a Small Project</title>
+	</head>
+<body>
+<p>Documentation is not hard though there is a temptation to make it so.  In this post, we&#8217;ll go over the details of generating documentation that can be exported to PDF and HTML from one source file.</p>
+
+<p>I wanted to generate some end-user help manuals for one of my projects at work, and I wanted to print it as a nicely typeset PDF as well as display it in HTML. Writing in Mac OSX&#8217;s <em>Pages</em> or in raw HTML was out of the question because neither of these formats could eventually be converted to anything else without losing the nice formatting. They were siloed in their own worlds and adding links &amp; images in either document formats was tedious.</p>
+
+<p>For this reason, I knew that whatever I wrote, I had to write it in a simple &#8220;meta&#8221; format that could eventually be exported to HTML and PDF. </p>
+
+<h1 id="deathby1000xmlcuts">Death by 1000 XML Cuts</h1>
+
+<p>For a brief moment along this path, I was led astray by xml, docbook, toolchains, and a dizzying myriad of other meta format options. I spent hours trying to memorize the Docbook syntax.  I banged my head for another hour trying to locate the XSLT stylesheets, and finally, I struggled to find the <a href="http://tldp.org/HOWTO/DocBook-Demystification-HOWTO/x109.html">right tools</a> to transform all of this junk into a meaningful html or pdf document. XML involved too much fluff, too much stuff that I had to learn just to get a simple task done.  On top of all that, the raw document, raw output, and most of the <a href="http://www.w3c.com">sites that championed XML/DOCBook</a> were ugly.  Needless to say, by the time I figured out everything, I had made 0% progress on writing any documentation.</p>
+
+<h1 id="salvation">Salvation</h1>
+
+<p>Luckily for me, salvation came. It arrived in the form of [MultiMarkdown], a <em>simple</em> format to markup your text without the unnecessary bloat of xml. With MultiMarkdown and a combination of other tools I was able to generate the final forms of my documentation. You can get an overview of the process from the diagram below. As you can see, I did end up using a small bit of XML technology (specifically XSLTs) to generate a table of contents from my MultiMarkdown XHTML output.</p>
+
+<p><img id="process" src="process.png" alt="process" title="" /></p>
+
+<p>To get started, all you need is something to convert your MultiMarkdown documents into the desired format.  For this task you can either download [pandoc], or the <a href="http://files.fletcherpenney.net/MultiMarkdown.zip">conversion scripts</a> from the creator of MultiMarkown&#8217;s <a href="http://fletcherpenney.net/multimarkdown/">site</a>. Although [pandoc] looks like a promising tool, I personally had trouble installing it on my computer because of issues with macports &amp; ghc.</p>
+
+<h1 id="typingthedocumentation">Typing the Documentation</h1>
+
+<p>One of MultiMarkdown&#8217;s best feature is its simple-to-learn syntax. It&#8217;s so intuitive, you don&#8217;t feel like you&#8217;re learning anything new at all. Below are a few commands to help you get started. For further help in TextMate, use the Control+H key combo to pull up the built in cheatsheet.</p>
+
+<pre><code>  # This is an H1 tag
+  ## This is an H2 tag
+  ### This is an H3 tag
+  ... And so on
+
+  [This is a Link](http:\\www.google.com)
+
+  ![This is an Image](my_image.jpg)
+
+  CSS: style.css
+</code></pre>
+
+<p>The last command, &#8220;CSS: style.css&#8221; tells the MultiMarkdown converter to link up <em>style.css</em> to the converted html file. I like to include it at the very top of any markdown document so that I can later stylize it with my own custom CSS.</p>
+
+<h1 id="convertingtostylizedhtml">Converting To Stylized HTML</h1>
+
+<p>Converting your MultiMarkdown to html is a simple process:</p>
+
+<ol>
+<li><p>Run multimarkdown2XHTML.pl provided in the &#8220;bin&#8221; directory of the MultiMarkdown <a href="http://files.fletcherpenney.net/MultiMarkdown.zip">distribution</a> to transform your text.</p>
+
+<pre><code> multimarkdown2XHTML.pl file.markdown &gt; file.html
+</code></pre></li>
+<li><p>Add a table of contents using xsltproc and xhtml-toc-h2.xslt</p>
+
+<pre><code> xsltproc xhtml-toc-h2.xslt file.html &gt; file_with_toc.html
+</code></pre></li>
+<li><p>Stylize your final HTML with some nice CSS. <a href="documentation.css">Here&#8217;s the CSS that I&#8217;ve used for my own documentation</a>. It&#8217;s a modification on the oh-so-beautiful FreeBSD documentation theme.</p></li>
+</ol>
+
+<h1 id="convertingtoabeautifullytypesetpdf">Converting to a Beautifully Typeset PDF</h1>
+
+<p>Converting to PDF basically follows the same path, just with some different tools.</p>
+
+<ol>
+<li><p>Run multimarkdown2latex.pl provided in the &#8220;bin&#8221; directory of the MultiMarkdown <a href="http://files.fletcherpenney.net/MultiMarkdown.zip">distribution</a> to transform your text into LaTex.</p>
+
+<pre><code> multimarkdown2latex.pl file.markdown &gt; file.tex
+</code></pre></li>
+<li><p>Add some LaTex <a href="http://www.artofproblemsolving.com/LaTeX/AoPS_L_GuideLay.php#start">formatting options</a> if needed. For example, I added the following options to prevent indentation at the beginnings of paragraphs.</p>
+
+<p>\setlength{\parindent}{0em}</p></li>
+<li><p>Use [pdflatex] to turn the output from the previous step into a PDF.</p>
+
+<pre><code> pdflatex file.tex
+</code></pre></li>
+</ol>
+
+<p>If you&#8217;re lucky enough to have TextMate, all of these conversion mentioned above scripts are prepackaged in the &#8220;MarkDown&#8221; bundle for you. </p>
+
+<p><img id="textmatescreenshot" src="textmate_snapshot.png" alt="Textmate Screenshot" title="Textmate Screenshot" /></p>
+
+<h1 id="finalthoughts">Final Thoughts</h1>
+
+<p>So there you have it. With MultiMarkdown, you write one document and transform it into PDF and HTML with some basic tools. Overall, the format is concise, easily readable in raw format, and easy to maintain since it&#8217;s just plain-ol text. It is versatile, and has a mature set of tools to work with it.  I&#8217;ve come to love it just as the creator of <a href="http://blog.macromates.com/2005/textmate-manual/">TextMate</a>, and many others have. For small to medium projects, it&#8217;s the perfect documentation tool. </p>
+
+<p>If you&#8217;re wondering what the final results look like, I wrote this article in markdown and sample of the <a href="article.markdown">Markdown</a>, <a href="article.pdf">PDF</a>, and <a href="article.html">XHTML</a> that I generated.</p>
+
+<h2 id="resourcesmentioned">Resources Mentioned</h2>
+
+<ul>
+<li><a href="http://fletcherpenney.net/multimarkdown/">MultiMarkdown&#8217;s Main Site</a></li>
+<li><a href="http://files.fletcherpenney.net/MultiMarkdown.zip">MultiMarkdown Scripts</a></li>
+<li><a href="http://johnmacfarlane.net/pandoc/">Pandoc</a></li>
+<li><a href="documentation.css">My Custom CSS for Documentation</a></li>
+<li><a href="http://www.tug.org/applications/pdftex/">PDFLaTex</a></li>
+<li><a href="http://www.artofproblemsolving.com/LaTeX/AoPS_L_GuideLay.php#start">LaTex Formatting Options Tutorial</a></li>
+</ul>
+</body>
+</html>

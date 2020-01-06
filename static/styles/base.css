@@ -1,0 +1,364 @@
+/*
+
+See link below for organization methodology
+
+    http://mirificampress.com/permalink/beautiful_css_organizing_your_stylesheets
+
+*/
+
+/**************** Universal Styles ****************/
+
+/* reset */
+* {
+    margin:0;
+    padding:0;
+}
+
+/* shim in html5 tags */
+header, section, footer, aside, nav, article, figure {display: block;}
+
+body {
+	background-color: #fff;
+	font-size: 15px; /* Base font size: 13px */
+    line-height: 1.61em;
+    text-align: left;
+    color: #444;
+    font-family:  "Avenir", "Helvetica", sans-serif;
+}
+
+/* Headings */
+
+h1,h2,h3,h4,h5,h6 {
+    font-family:  "Avenir", "Helvetica", sans-serif;
+}
+h2 {font-size: 1.571em}	/* 22px */
+h3 {font-size: 1.3em}	/* 20px */
+h4 {font-size: 1.286em}	/* 18px */
+h5 {font-size: 1.1em}	/* 16px */
+h6 {font-size: 1em} 	/* 14px */
+h2, h3, h4, h5, h6 {
+	line-height: 1.1;
+    font-weight:600;
+	margin-bottom: .8em;
+}
+
+/* Anchors */
+a {
+    outline: 0;
+    text-decoration: none;
+}
+a img {
+
+}
+a:link, a:visited {
+    /* color: #8C98A8; */
+    color: #333;
+    transition: color .300s;
+    transition-timing-function: ease;
+}
+a:hover, a:active {
+    color: #5bcaff;
+}
+
+
+/* Paragraphs */
+p {margin-bottom: 1.143em;}
+* p:last-child {margin-bottom: 0;}
+
+strong, b {
+    font-weight: 500;
+}
+em, i {
+    font-style: italic;
+    padding-right: 2px; /* open sans and segoe ui fonts need additional padding */
+}
+
+/* rulers */
+hr {
+    display: block;
+    margin: 2em auto;
+    width: 100%;
+    clear: both;
+    border: none;
+    border-top: 1px solid #AAA;
+    line-height: 0;
+    overflow: visible;
+}
+
+/* lists */
+ul {
+	list-style: outside disc;
+	margin: 1em 0 1.5em 1.5em;
+}
+
+ol {
+	list-style: outside decimal;
+	margin: 1em 0 1.5em 1.5em;
+}
+
+dl { margin: 0 0 1.5em 0; }
+dt { font-weight: 500; }
+dd { margin-left: 1.5em; }
+
+/* quotes */
+blockquote {
+    /*font-style: italic;*/
+    border-left: 1px solid #4A525A;
+    padding-left: 1em;
+    margin: 1em 0;
+}
+
+cite {}
+q {}
+
+
+/* tables */
+table {
+    margin: .5em auto 1.5em auto;
+    width: 100%;
+}
+
+th {
+    padding: .2em .4em;
+    text-align: left;
+    vertical-align: top;
+}
+
+td {
+    padding: .2em 0;
+    text-align: left;
+    vertical-align: top;
+}
+
+sup {
+    font-size:.8em;
+}
+
+code {
+    font-family: "Menlo", "Andale Mono", monospace;
+}
+
+
+/**************** Layout Styles ****************/
+
+div.container {
+    background:white;
+    margin:0px auto;
+    bottom:0px;
+    top:0px;
+}
+
+ul.nav{
+    font-size: 1em;
+    list-style:none;
+    margin:0px;
+}
+ul.nav li{
+    float:left;
+    margin-right:20px;
+}
+ul.nav li a {
+}
+
+
+ul#nav-bottom {
+    /*position:fixed;*/
+}
+
+div#nav-container {
+    width:82.5%;
+    margin: 0px auto;
+}
+
+div#content-container {
+    background:white;
+}
+
+
+.content {
+    margin:1em auto;
+    width: 82.5%;
+}
+
+div.post {
+}
+
+div.post-date {
+    color: #888;
+    text-align:center;
+    font-size:.8em;
+    margin-left:-10px;
+}
+div.advertisement {
+    /*background: #fafafa;*/
+    float:right;
+    color: #888;
+    width:110px;
+
+    text-align:center;
+    vertical-align: middle;
+    padding: 0 10px 0 10px;
+    margin: 30px -146px 20px auto;
+}
+
+
+
+/**************** Library Styles ****************/
+
+div.header-rule {
+    border-bottom: 1px solid #E7EAEF;
+}
+.rounded {
+    -webkit-border-radius: 4px;
+       -moz-border-radius: 4px;
+            border-radius: 4px;
+}
+
+.site-title {
+    font-size: 2.2em;
+    width:82.5%;
+    margin:10px auto;
+    font-weight: 600;
+    line-height: 1.5em;
+    font-family: 'Rock Salt', "Avenir", "Helvetica", sans-serif;
+}
+.site-title a {
+    /*color: #5bcaff !important;*/
+    transition: color .500s;
+    transition-timing-function: ease;
+}
+.site-title a:hover {
+    /*color: #E7EAEF !important;*/
+}
+
+img.icon {
+    vertical-align:text-bottom;
+}
+
+.avatar {
+    -webkit-border-radius:4px;
+       -moz-border-radius:4px;
+            border-radius:4px;
+    margin: 2em;
+}
+
+
+table.archives td.archive-title {
+    max-width:85%;
+}
+table.archives td.archive-date {
+    width: 20%;
+    min-width: 50px;
+}
+
+
+
+
+.clear {clear:both;} /* clear floated elements */
+
+.post-title a {
+    border-bottom: none;
+    font-weight: 700;
+}
+div.post-content a {
+    text-decoration: underline;
+    text-decoration-color: #007aff;
+
+}
+
+/* post content styling */
+div.post-content h1,
+div.post-content h2,
+div.post-content h3,
+div.post-content h4 {
+    margin-top: 39px;
+    padding-bottom: 14px;
+}
+
+div.post-content h5,
+div.post-content h6 {
+    margin-top: 39px;
+    padding-bottom: 0px;
+}
+
+/* images at the very top of posts*/
+img.marquee-image {
+    max-width:100%;
+
+    -webkit-box-shadow: 0 0 8px #888;
+       -moz-box-shadow: 0 0 8px #888;
+            box-shadow: 0 0 8px #888;
+
+    -webkit-border-radius: 4px;
+       -moz-border-radius: 4px;
+            border-radius: 4px;
+
+    margin: 0 auto 1em auto;
+}
+
+
+div.post-content img {
+    max-width:100%;
+    margin: 1em auto 1em -1px;
+    border: 1px solid rgba(134, 139, 148, 0.2);
+}
+
+div.post-content pre {
+    font-family: "Menlo", "Andale Mono", monospace;
+    overflow-x:scroll;
+    padding: 1em;
+    background: rgba(234, 239, 248, 0.50);
+    margin: 1em 0;
+    font-size: .8em;
+    line-height: 16px;
+    border: 1px solid rgba(224, 229, 228, 0.30);
+}
+
+div.related-post {
+    margin: 1em 0px;
+    clear:both;
+}
+div.related-post-date {
+
+}
+div.related-post-title {
+
+}
+
+
+.pitch {
+    border-top:1px dotted #007aff;
+    border-bottom:1px dotted #007aff;
+    padding:2em;
+}
+.pitch a {
+    text-decoration: underline;
+    text-decoration-color: #007aff;
+}
+
+
+.post-content {
+    font-family: "Lora", "Georgia", serif;
+}
+
+.post-content p img {
+    cursor:pointer;
+}
+
+@media screen and (min-width: 800px) {
+    body {
+        font-size: 16px;
+    }
+    div.container {
+        max-width:960px;
+    }
+}
+
+@media (max-width:680px) {
+    .content {
+        width: 88%;
+    }
+    .site-title, div#nav-container {
+        width: 88%;
+    }
+}

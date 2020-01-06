@@ -1,0 +1,38 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Basic Map Mashup</title>
+    <script src="http://www.google.com/jsapi?key=ABQIAAAAn4rB-Z3cv7dknT_yoR9ZthT-EI9t-33_bK6onNIl8e9zId8x4hQlzO-K_ka8btmB56HVCJwuqb182g" type="text/javascript"></script>
+    <script type="text/javascript">
+    google.load("maps", "2.x");
+    var map=null
+
+    function initialize() {
+      // Create the map
+      map = new google.maps.Map2(document.getElementById("map"));
+      
+      // Set the centering and zoom levels
+      // Adjust this for the area you want to see
+      map.setCenter(new google.maps.LatLng(33.908741, -98.49954), 4);
+      
+      // Add some controls for zooming, etc.
+      map.addControl(new GLargeMapControl());
+      map.addControl(new GMapTypeControl());
+
+	  // Create your icons
+	  
+	  // Add the overlays using KML 
+	  // CHANGE THIS TO YOUR KML FILE
+      var geoXml = new GGeoXml("http://code.google.com/apis/kml/documentation/KML_Samples.kml" );
+	  map.addOverlay(geoXml);
+	  
+    }
+    google.setOnLoadCallback(initialize);
+  </script>
+
+  </head>
+  <body>
+
+    <div id="map" style="height: 700px;width: 960px;border: 1px solid black;">Loading...</div>
+  </body>
+</html>

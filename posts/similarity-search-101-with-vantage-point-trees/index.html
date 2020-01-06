@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Similarity search 101 - Part 2 (search with vp-trees) &laquo; Searching Gradients with Huy</title>
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" href="/atom.xml" />
+    <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/syntax.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css">
+    <!-- <link href="https://fonts.googleapis.com/css?family=Lora&display=swap" rel="stylesheet"> -->
+    <link href="https://fonts.googleapis.com/css?family=Lora|Rock+Salt&display=swap" rel="stylesheet">
+
+
+
+
+    <!-- fonts -->
+    <link href="//netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
+
+    <!-- javascript -->
+    <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
+
+    <!-- google analytics -->
+    <script type="text/javascript">
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-6813218-1']);
+        _gaq.push(['_trackPageview']);
+
+        // count visits longer than 15 secs as
+        setTimeout("_gaq.push(['_trackEvent', '15_seconds', 'read'])", 15000);
+
+        (function () {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+
+</head>
+
+<body>
+    <div class="container">
+        <br>
+        <div class="site-title"><a href="/">Searching Gradients</a></div>
+        <br>
+        <div id="nav-container">
+            <ul class="nav" style="width:100%;">
+                <li><a href="/">
+                        <span style="color:#444"><i class="icon-align-justify icon-medium"></i></span>
+                        posts</a></li>
+                <li><a href="https://everyhue.me/">
+                        <span style="color:#444"><i class="icon-gamepad icon-medium"></i></span>
+                        about</a></li>
+                <li class="social-media-nav">
+                    <a id="twitter" href="http://twitter.com/huyng">
+                        <span style="color:#444"><i class="icon-twitter icon-medium"></i></span>
+                        twitter
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="github" href="https://github.com/huyng">
+                        <span style="color:#444"><i class="icon-github icon-medium"></i></span>
+                        github
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="rss" href="/atom.xml">
+                        <span style="color:#444"><i class="icon-rss-sign icon-medium"></i></span>
+                        feed
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="clear"></div>
+
+        <br>
+        <center>
+            <img src="/static/images/welder.jpg" alt="Header photo - welder" width="100%" />
+        </center>
+
+        <div id="content-container">
+            <!-- POST -->
+
+<br>
+<br>
+<!-- <div class="header-rule"></div> -->
+<div class="post content">
+    <div class="post-date">26 Mar 2014</div><br><br>
+
+    
+    <h2 class="post-title"><a href="/posts/similarity-search-101-with-vantage-point-trees/">Similarity search 101 - Part 2 (search with vp-trees)</a></h2>
+
+    <br>
+    <div class="post-content">
+    <blockquote>
+  <p>This is the 2nd article in a two part series on similarity search. See <a href="/posts/similarity-search-101-part-1/"><strong>part 1</strong></a> for an overview of the subject.</p>
+</blockquote>
+
+<p>In this second installment of my series on similarity search we’ll figure out how to improve on the speed and efficiency of querying our database for nearest neighbors using a data structure known as a “vantage point tree”.</p>
+
+<p>We previously used a brute force approach by computing pairwise distances between our query and all points in our dataset so that we could find items that were close to it.</p>
+
+<p>Unfortunately, this technique scales in <script type="math/tex">O( \# examples \times \# features)</script> time which is prohibitively expensive on even modestly sized datasets.</p>
+
+<p><a href="https://en.wikipedia.org/wiki/K-d_tree">Kd-trees</a>, and more recently <a href="https://en.wikipedia.org/wiki/Vantage-point_tree">vantage point trees</a> (a.k.a vp-trees), have gained popularity within the machine learning community for their efficacy in reducing the computational cost of similarity search over large datasets.</p>
+
+<p>For this article, we’ll focus on examining how a vp-tree works.</p>
+
+<h3 id="what-is-a-vantage-point-tree-and-how-do-we-construct-one">What is a vantage point tree and how do we construct one?</h3>
+
+<p>In a nutshell, a vantage point tree structure allows us to store the elements of our dataset in such a way that during query time, we can quickly exclude from examination large portions of our data without having to perform any distance computations on the elments of that excluded portions.</p>
+
+<p>Let’s take a look at the basic structure of a vp-tree because it will allow us to understand how we can prune data from a search at query time.</p>
+
+<p>By definition, each node in a vp-tree stores at a minimum 5 pieces of information:</p>
+
+<ol>
+  <li>A list of elements sampled from our dataset</li>
+  <li>A vantage point element chosen randomly from the list of elements above</li>
+  <li>A distance called <em>mu</em></li>
+  <li>A “left” child node</li>
+  <li>A “right” child node</li>
+</ol>
+
+<p>I’ll explain soon how all of these compoenents relate, but in the meantime here’s an illustration of the vp-tree concept:</p>
+
+<p><img src="/media/3016/vptree.png" alt="vantage point tree" /></p>
+
+<p>At the root node of our tree, the list of elements consists of <em>every</em> single item in our data set. From this list of items, we choose one element and designate it as our <em>vangate point</em>.</p>
+
+<p>To choose <script type="math/tex">mu</script>, we compute the median distance between our vantage point <script type="math/tex">vp</script> and all other elements <script type="math/tex">P</script> in the current node .</p>
+
+<script type="math/tex; mode=display">mu = median(\ dist(vp, p)\ )\ \ \ \forall p \in P</script>
+
+<p>We select all points within a distance <script type="math/tex">mu</script> from the vantage point to assign elements to the <em>left child node</em>.  And similarly, we can assign all points outside of <script type="math/tex">mu</script> to the <em>right child node</em>.</p>
+
+<p><img src="/media/3016/left_right_child.png" alt="elements for left and right child" /></p>
+
+<p>Since <script type="math/tex">mu</script> is the median distance between the vantage point and all other points, this procedure effectively divides into half the elements we assign to the left and right child nodes.</p>
+
+<p>Finally, to construct the rest of the tree, we recursively follow this same procedure for each child node, until there are no more elements to assign to child nodes.</p>
+
+<p>Here is some pseudo code to build the tree:</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">class</span> <span class="nc">VPNode</span><span class="p">:</span>
+    <span class="n">elements</span>
+    <span class="n">left_child</span>
+    <span class="n">right_child</span>
+    <span class="n">mu</span>
+
+<span class="k">def</span> <span class="nf">build_vp_tree</span><span class="p">(</span><span class="n">elements</span><span class="p">):</span>
+    <span class="n">node</span> <span class="o">=</span> <span class="n">new</span> <span class="n">VPNode</span><span class="p">()</span>
+    <span class="n">node</span><span class="o">.</span><span class="n">vp</span> <span class="o">=</span> <span class="n">select_random</span><span class="p">(</span><span class="n">elements</span><span class="p">)</span>
+    <span class="n">node</span><span class="o">.</span><span class="n">mu</span> <span class="o">=</span> <span class="n">median</span><span class="p">(</span><span class="n">distance</span><span class="p">(</span><span class="n">vp</span><span class="p">,</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">elements</span><span class="p">)</span>
+    <span class="n">left_elements</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">elements</span> <span class="n">where</span> <span class="n">distance</span><span class="p">(</span><span class="n">vp</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">mu</span><span class="p">]</span>
+    <span class="n">right_elements</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">elements</span> <span class="n">where</span> <span class="n">distance</span><span class="p">(</span><span class="n">vp</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">mu</span><span class="p">]</span>
+    <span class="n">node</span><span class="o">.</span><span class="n">left_child</span> <span class="o">=</span> <span class="n">build_vp_tree</span><span class="p">(</span><span class="n">left_elements</span><span class="p">)</span>
+    <span class="n">node</span><span class="o">.</span><span class="n">right_child</span> <span class="o">=</span> <span class="n">build_vp_tree</span><span class="p">(</span><span class="n">right_elements</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">node</span></code></pre></figure>
+
+<h3 id="nearest-neighbor-search-with-the-vantage-point-tree">Nearest neighbor search with the vantage point tree</h3>
+
+<p>For a dataset encoded as a vantage point tree and a query point <script type="math/tex">q</script>, how can we find the closest <script type="math/tex">k</script> points in our dataset without running distance computations for every single element?</p>
+
+<p>One approach we could take is to say that for every <script type="math/tex">q</script> there is some threshold distance <script type="math/tex">tau</script> where <em>all</em> of its closest <script type="math/tex">k</script> neighbors are contained within this threshold. You can imagine this area as an enclsosed circle as depcited below:</p>
+
+<p><img src="/media/3016/querypoint.png" alt="query point and tau" /></p>
+
+<p>There are three scenarios for how this query-tau area can relate to any node within our vantage point tree.</p>
+
+<h5 id="pruning-the-left-child-node">Pruning the left child node</h5>
+
+<p>The first scenario is if the area lies <em>completely</em> outside of our vantage-point-mu radius as depicted below. If this is the case, we can safely assume that if we are to find <script type="math/tex">q</script>’s nearest neighbors we can forego looking in our node’s left child, which contains all elements within the mu radius of this vantage point.</p>
+
+<p><img src="/media/3016/disjoint_vp_q.png" alt="query-tau and vp-mu areas are disjoint" /></p>
+
+<h5 id="pruning-the-right-child-node">Pruning the right child node</h5>
+
+<p>The next scenario is when the query-tau area lies <em>completely</em> inside the bounds of the vantage point’s mu-radius (see below). In this case, we can ignore all points outside of <script type="math/tex">mu</script> which we had conveniently assigned to the right child node.</p>
+
+<p><img src="/media/3016/union_vp_q.png" alt="query-tau and vp-mu areas are disjoint" /></p>
+
+<h5 id="worst-case-we-check-both-left-and-right-child-nodes">Worst case, we check both left and right child nodes</h5>
+
+<p>What happens when the query-tau area partially intersects with our node’s vantage point’s mu-radius?</p>
+
+<p><img src="/media/3016/intersect_vp_q.png" alt="query-tau and vp-mu areas partially intersect" /></p>
+
+<p>In this scenario, we can’t say whether the right or left child contains the nearest neighbors, so we have to search both nodes.</p>
+
+<h5 id="traversing-the-tree-to-find-nearest-neighbors">Traversing the tree to find nearest neighbors</h5>
+
+<p>To summarize, when the query threshold area is <em>completely</em> outside the bounds of our node’s vantage-point mu boundary, we can exclude or “prune” the left child node from our search space. When the query threshold is <em>completely</em> inside the bounds of vantage-point mu boundary, we cans safely ignore the right child node. And finally when neither is the case, we must search both left and right child nodes.</p>
+
+<p>Now that we know how to behave when examining a single node, we can use this knowledge to find <script type="math/tex">q</script>’s nearest neighbors by recursively shrinking <script type="math/tex">tau</script> as we search down the vantage point tree.</p>
+
+<p>More concretely, we initialize <script type="math/tex">tau</script> to be infinity. And as we traverse from the root node to each child node of the vp-tree, we set <script type="math/tex">tau</script> to be equal to the lesser of the distance from <script type="math/tex">q</script> to <script type="math/tex">vp</script> or any previously seen <script type="math/tex">tau</script>.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">find_nearest_neighbors</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+    <span class="s">"""
+    tree = the VP tree
+    k    = # of nearest neighbors you wanted to find
+    q    = query point
+    """</span>
+
+    <span class="n">tau</span> <span class="o">=</span> <span class="n">infinity</span>
+    <span class="n">nodes_to_visit</span> <span class="o">=</span> <span class="p">[</span><span class="n">tree</span><span class="p">]</span>
+
+    <span class="c1"># fixed size array for nearest neightbors
+</span>    <span class="c1"># sorted from closest to farthest neighbor
+</span>    <span class="n">neighbors</span> <span class="o">=</span> <span class="n">PriorityQueue</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+
+    <span class="k">while</span> <span class="n">nodes_to_visit</span><span class="o">.</span><span class="n">length</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="n">nodes_to_visit</span><span class="o">.</span><span class="n">popleft</span><span class="p">()</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">distance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">vp</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">d</span> <span class="o">&lt;</span> <span class="n">tau</span><span class="p">:</span>
+            <span class="c1"># store node.vp as a neighbor if it's closer than any other point
+</span>            <span class="c1"># seen so far
+</span>            <span class="n">neighbors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">vp</span><span class="p">)</span>
+
+            <span class="c1"># shrink tau
+</span>            <span class="n">farthest_nearest_neighbor</span> <span class="o">=</span> <span class="n">neighbors</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">tau</span> <span class="o">=</span> <span class="n">distance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">farthest_nearest_neighbor</span><span class="p">)</span>
+
+        <span class="c1"># check for intersection between q-tau and vp-mu regions
+</span>        <span class="c1"># and see which branches we absolutely must search
+</span>
+        <span class="k">if</span> <span class="n">d</span> <span class="o">&lt;</span> <span class="n">node</span><span class="o">.</span><span class="n">mu</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">d</span> <span class="o">&lt;</span> <span class="n">node</span><span class="o">.</span><span class="n">mu</span> <span class="o">+</span> <span class="n">tau</span><span class="p">:</span>
+                <span class="n">nodes_to_visit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">left_child</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">d</span> <span class="o">&gt;=</span> <span class="n">node</span><span class="o">.</span><span class="n">mu</span> <span class="o">-</span> <span class="n">tau</span><span class="p">:</span>
+                <span class="n">nodes_to_visit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">right_child</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">d</span> <span class="o">&gt;=</span> <span class="n">node</span><span class="o">.</span><span class="n">mu</span> <span class="o">-</span> <span class="n">tau</span><span class="p">:</span>
+                <span class="n">nodes_to_visit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">right_child</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">d</span> <span class="o">&lt;</span> <span class="n">node</span><span class="o">.</span><span class="n">mu</span> <span class="o">+</span> <span class="n">tau</span><span class="p">:</span>
+                <span class="n">nodes_to_visit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">left_child</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">neighbors</span></code></pre></figure>
+
+<p>Here is the full source code for my <a href="https://github.com/huyng/algorithms/tree/master/vptree">python implementation of a vantage point tree</a>.</p>
+
+<h5 id="references">references</h5>
+
+<ul>
+  <li>
+    <p><a href="http://www.cs.iastate.edu/~honavar/nndatastructures.pdf">Data Structures and Algorithms for Nearest Neighbor Search in Metric Space</a></p>
+  </li>
+  <li>
+    <p><a href="http://www1.cs.columbia.edu/CAVE/publications/pdfs/Kumar_ECCV08_2.pdf">What is a Good Nearest Neighbors Algorithm
+for Finding Similar Patches in Images?</a></p>
+  </li>
+</ul>
+
+
+    </div>
+
+    <br>
+    <br>
+
+    <div class="pitch">
+        Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
+    </div>
+
+    <br>
+    <br>
+    <br>
+
+    <!-- related posts -->
+    <div id="related">
+        <h3>Related Posts</h3>
+            
+            <div class="related-post">
+              <div class="related-post-date">19 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-part-1/">Similarity search 101 - Part 1 (overview)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">14 Dec 2013</div>
+              <div class="related-post-title"><a href="/posts/faster-numpy-dot-product/">Faster Numpy Dot Product for Multi-dimensional Arrays</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">30 Oct 2013</div>
+              <div class="related-post-title"><a href="/posts/json-streaming-record-data-format/">The JSON Streaming Record (JSRec) data format</a></div>
+              <div class="clear"></div>
+            </div>
+            
+        </table>
+    </div>
+    <br> <br> <br>
+
+</div>
+
+<div class="header-rule"></div>
+<div class="content">
+
+
+    <!-- discussion -->
+    
+
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        var disqus_shortname = 'huyng';
+        var disqus_identifier = 'http://www.huyng.com/posts/similarity-search-101-with-vantage-point-trees/';
+        var disqus_url = 'http://www.huyng.com/posts/similarity-search-101-with-vantage-point-trees/';
+
+        
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+        
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    
+
+</div>
+<!-- /POST -->
+        </div><!-- /content-container -->
+        <div class="clear"></div>
+        <br>
+        <br>
+        <br>
+    </div>
+
+
+    <!-- SCRIPTS -->
+    <script type="text/javascript"
+        src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="/static/bower_components/pixastic/pixastic.custom.js"></script>
+
+    <!-- colorbox -->
+    <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $(".post-content p img")
+                .colorbox({
+                    // no transition
+                    transition: "none",
+
+                    // use image src as href
+                    href: function () {
+                        return this.getAttribute('src');
+                    },
+
+                    title: function () {
+                        return this.getAttribute('alt');
+                    },
+
+
+                    // slightly dark bg
+                    opacity: 1,
+
+                    // set max widths x height
+                    scalePhotos: true,
+                    maxWidth: "85%",
+                    maxHeight: "80%",
+
+                    // make it so overlay is fixed
+                    fixed: true,
+
+                    // group photos in posts
+                    rel: "gallery"
+                });
+        });
+    </script>
+
+    <!-- page specific scripts -->
+    
+
+    
+</body>
+
+</html>

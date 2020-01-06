@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Apple UI Recreation</title>
+
+<style>
+*{margin:0; padding:0}
+body {
+    background: url(vangogh.png);
+}
+.container {
+    margin: 20px;
+}
+ul {
+    list-style-type: none;
+}
+
+li {
+    float:left;
+    width: 150px;
+}
+
+img {
+    border-radius: 10px;
+    box-shadow: 0 0 6px #000;
+    border:0px solid white;
+}
+.x {
+    width:100px;
+    margin:10px;
+
+   /*    -webkit-animation:bounce 1s linear alternate;*/
+    -webkit-animation:wiggle .22s infinite .3s;
+
+}
+
+.x:hover {
+    -webkit-transition:.2s ease-out;
+    -webkit-animation:none;
+    width:120px;
+    top:-10px;
+    left:-10px;
+    position:relative;
+}
+
+
+.x:active {
+    margin-left:60px;
+    margin-top:-60px;
+    width:0px;
+    border:0px;
+    box-shadow:0px;
+    /*    -webkit-transform: rotate(10deg);*/
+    -webkit-transition:.2s;
+}
+
+@-webkit-keyframes wiggle {
+    0% {-webkit-transform:rotate(1deg);}
+    50% {-webkit-transform:rotate(-1deg);}
+    100% {-webkit-transform:rotate(1deg);}
+}
+
+@-webkit-keyframes bounce {
+    0% {
+        width:200px;
+        -webkit-animate-timing-function: ease-in;         
+    }
+    
+    25% {
+        width:100px;
+        -webkit-animate-timing-function: ease-out;         
+    }
+
+    75% {
+        width:125px;
+        -webkit-animate-timing-function: ease-in;                     
+    }
+    
+    100% {
+         width:100px;
+         -webkit-animate-timing-function: ease-out;             
+    }
+    
+}
+​
+
+</style>
+
+
+<body>
+<ul class="container">
+    <li>        
+    <img class="x" src="cats.png">
+    </li>
+    <li>
+    <img class="x" src="dogs.png">
+    </li>
+    <li>
+    <img class="x" src="sunset.png">
+    </li>
+</ul>
+​</body>
+</html>

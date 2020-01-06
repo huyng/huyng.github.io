@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Don't Hash Your Secrets &laquo; Searching Gradients with Huy</title>
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" href="/atom.xml" />
+    <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/syntax.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css">
+    <!-- <link href="https://fonts.googleapis.com/css?family=Lora&display=swap" rel="stylesheet"> -->
+    <link href="https://fonts.googleapis.com/css?family=Lora|Rock+Salt&display=swap" rel="stylesheet">
+
+
+
+
+    <!-- fonts -->
+    <link href="//netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
+
+    <!-- javascript -->
+    <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
+
+    <!-- google analytics -->
+    <script type="text/javascript">
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-6813218-1']);
+        _gaq.push(['_trackPageview']);
+
+        // count visits longer than 15 secs as
+        setTimeout("_gaq.push(['_trackEvent', '15_seconds', 'read'])", 15000);
+
+        (function () {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+
+</head>
+
+<body>
+    <div class="container">
+        <br>
+        <div class="site-title"><a href="/">Searching Gradients</a></div>
+        <br>
+        <div id="nav-container">
+            <ul class="nav" style="width:100%;">
+                <li><a href="/">
+                        <span style="color:#444"><i class="icon-align-justify icon-medium"></i></span>
+                        posts</a></li>
+                <li><a href="https://everyhue.me/">
+                        <span style="color:#444"><i class="icon-gamepad icon-medium"></i></span>
+                        about</a></li>
+                <li class="social-media-nav">
+                    <a id="twitter" href="http://twitter.com/huyng">
+                        <span style="color:#444"><i class="icon-twitter icon-medium"></i></span>
+                        twitter
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="github" href="https://github.com/huyng">
+                        <span style="color:#444"><i class="icon-github icon-medium"></i></span>
+                        github
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="rss" href="/atom.xml">
+                        <span style="color:#444"><i class="icon-rss-sign icon-medium"></i></span>
+                        feed
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="clear"></div>
+
+        <br>
+        <center>
+            <img src="/static/images/welder.jpg" alt="Header photo - welder" width="100%" />
+        </center>
+
+        <div id="content-container">
+            <!-- POST -->
+
+<br>
+<br>
+<!-- <div class="header-rule"></div> -->
+<div class="post content">
+    <div class="post-date">01 Feb 2010</div><br><br>
+
+    
+    <h2 class="post-title"><a href="/posts/dont-hash-your-secrets-heres-why-in-python/">Don't Hash Your Secrets</a></h2>
+
+    <br>
+    <div class="post-content">
+    <!-- End Meta -->
+<p>Ben Adida suggests that you <a href="http://benlog.com/articles/2008/06/19/dont-hash-secrets/">don't hash your secrets</a>.</p>
+<blockquote>
+<p>That means that if you know SHA1(secret || message), then you can compute SHA1(secret || message  || ANYTHING), which is a valid signature for message || ANYTHING. So to break this system, you just need to see one signature.</p>
+</blockquote>
+<p>Not being a cryptography expert, I was blown away by his article. At the core of his post is the idea that given a hash digest of a <strong>message</strong>, one could compute the hash of <strong>message + appended_message</strong> without even knowing the original message. </p>
+<p>I had to see this for myself. Was it <em>that</em> easy to extend an MD5 or SHA1 hash?
+Below, you'll find working <a href="/media/3006/spoof_md5.py.txt">python code</a> and an explanation for spoofing signatures signed with the MD5 algroithm. </p>
+<!--more-->
+<h3>Implementation</h3>
+<p>To generate a hash from a message, algorithms like MD5 and SHA1 iterate through the message block by block. For each block, the algorithm runs a <a href="http://en.wikipedia.org/wiki/Cryptographic_hash_function#Merkle-Damg.C3.A5rd_construction">transformation function</a> where the input is a <strong>seed state</strong> and a <strong>message block</strong> . The output of this transformation is then fed back as the <strong>seed state</strong> for the transformation of the next message block (see the above diagram).</p>
+
+<center><img alt="md5.png" src="/media/3006/md5.png" width="100%"></center>
+<p>After the hashing function has digested the entire message, it then appends some padding and runs the transformation function one more time. The <strong>final state</strong> of this transformation becomes the digest. </p>
+<div class="codehilite"><pre><span class="kn">from</span> <span class="nn">hashlib</span> <span class="kn">import</span> <span class="n">md5</span>
+<span class="n">signature</span> <span class="o">=</span> <span class="n">md5</span><span class="p">(</span><span class="s">&quot;secret&quot;</span> <span class="o">+</span> <span class="s">&quot;hello world&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">digest</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">signature</span><span class="p">))</span>
+<span class="s">&quot;O&#39;Q</span><span class="se">\xa8\xb8\x9d\x81</span><span class="s">%</span><span class="se">\xd7\x13</span><span class="s">&#39;</span><span class="se">\xe0\xfb</span><span class="s">_2</span><span class="se">\xde</span><span class="s">&quot;</span>
+</pre></div>
+<p>In the code above, <strong>the signature represents the state output of the final transformation function</strong>. </p>
+<p>AHA! We now have a strategy to extend the hash. If we can seed the transformation function with the state(AKA signature) of the original message, we can essentially extend the hash without even knowing the original message. </p>
+<p>There is one problem however. I mentioned before that the MD5 algorithm adds a piece of padding to the original message before it gives us the hash. That means whenever we see a signature it's really the hash of the <strong>message + padding</strong>. Fortunately, the padding is only dependent upon the length of the original message. With that in mind, we can easily generate both the new signature and padding. Here's some pseudocode</p>
+<div class="codehilite"><pre><span class="n">state</span> <span class="o">=</span> <span class="n">decode</span><span class="p">(</span><span class="n">signature</span><span class="p">)</span>
+<span class="n">padding</span> <span class="o">=</span> <span class="n">calculate_padding</span><span class="p">(</span><span class="n">original_message_len</span><span class="p">)</span>
+<span class="n">new_signature</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="s">&quot;appended message&quot;</span><span class="p">)</span>
+
+<span class="c"># This should be True</span>
+<span class="n">new_signature</span> <span class="o">==</span> <span class="n">md5</span><span class="p">(</span><span class="n">original_message</span> <span class="o">+</span> <span class="n">padding</span> <span class="o">+</span> <span class="s">&quot;appended message&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">digest</span><span class="p">()</span>
+</pre></div>
+<p>Now here is the real code.<br />
+</p>
+<div class="codehilite"><pre><span class="k">def</span> <span class="nf">spoof_digest</span><span class="p">(</span><span class="n">originalDigest</span><span class="p">,</span> <span class="n">originalLen</span><span class="p">,</span> <span class="n">spoofMessage</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">):</span>
+    <span class="c"># first decode digest back into state tuples</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">Decode</span><span class="p">(</span><span class="n">originalDigest</span><span class="p">,</span> <span class="mf">16</span><span class="p">)</span>
+
+    <span class="c"># generate a seed md5 object</span>
+    <span class="n">spoof</span> <span class="o">=</span> <span class="n">md5</span><span class="p">()</span>
+
+    <span class="c"># seed the count variable for calculation of index, padLen, and bits</span>
+    <span class="n">spoof</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="n">originalLen</span> <span class="o">&lt;&lt;</span> <span class="mf">3</span>
+
+    <span class="c"># calculate some variables to generate the original padding</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">spoof</span><span class="o">.</span><span class="n">count</span> <span class="o">&gt;&gt;</span> <span class="mf">3</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mf">0</span><span class="n">x3f</span><span class="p">)</span>
+    <span class="n">padLen</span> <span class="o">=</span> <span class="p">(</span><span class="mf">56</span> <span class="o">-</span> <span class="n">index</span><span class="p">)</span> <span class="k">if</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="mf">56</span> <span class="k">else</span> <span class="p">(</span><span class="mf">120</span> <span class="o">-</span> <span class="n">index</span><span class="p">)</span>
+    <span class="n">bits</span> <span class="o">=</span> <span class="n">Encode</span><span class="p">((</span><span class="n">spoof</span><span class="o">.</span><span class="n">count</span> <span class="o">&amp;</span> <span class="mf">0</span><span class="n">xffffffffL</span><span class="p">,</span> <span class="n">spoof</span><span class="o">.</span><span class="n">count</span><span class="o">&gt;&gt;</span><span class="mf">32</span><span class="p">),</span> <span class="mf">8</span><span class="p">)</span>
+
+    <span class="c"># construct the original padding</span>
+    <span class="n">padding</span> <span class="o">=</span> <span class="n">PADDING</span><span class="p">[:</span><span class="n">padLen</span><span class="p">]</span>
+
+    <span class="c"># augment the count with the new padding and trailing bits</span>
+    <span class="n">spoof</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">padding</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mf">3</span>
+    <span class="n">spoof</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bits</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mf">3</span>
+    <span class="n">spoof</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">state</span>
+
+    <span class="c"># run an update</span>
+    <span class="n">spoof</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">spoofMessage</span><span class="p">)</span>
+
+    <span class="c"># We now have a digest of the original secret + message + some_padding</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">spoof</span><span class="o">.</span><span class="n">digest</span><span class="p">(),</span> <span class="n">padding</span> <span class="o">+</span> <span class="n">bits</span><span class="p">)</span>
+</pre></div>
+<p>The code has a dependency on a pure-python implementation of the md5 algorithm that I've packaged it together with <a href="/media/3006/spoof_md5.py.txt">the source code</a>. If you want to try it out, download the file and run this test function (also included in the file):</p>
+<div class="codehilite"><pre><span class="k">def</span> <span class="nf">test_spoofing</span><span class="p">():</span>
+    <span class="n">originalMsg</span> <span class="o">=</span> <span class="s">&quot;secret&quot;</span> <span class="o">+</span> <span class="s">&quot;my message&quot;</span>
+    <span class="n">appendedMsg</span> <span class="o">=</span> <span class="s">&quot;my message extension&quot;</span>
+
+    <span class="c"># This is the signature that a legitimate user sends</span>
+    <span class="c"># over the wire in clear text. </span>
+    <span class="n">originalSignature</span> <span class="o">=</span> <span class="n">md5</span><span class="p">(</span><span class="n">originalMsg</span><span class="p">)</span><span class="o">.</span><span class="n">digest</span><span class="p">()</span>
+
+    <span class="c"># This is how an attacker would spoof the signature where,</span>
+    <span class="c"># the message ==  originalMsg + padbits + appendedMsg .</span>
+    <span class="c"># Notice that this method implies that the attacker</span>
+    <span class="c"># knows the original length of the &quot;secret&quot; ... </span>
+    <span class="c"># Most apis such as Flickr assign secrets that are of</span>
+    <span class="c"># uniform length for all of their api users.</span>
+    <span class="n">spoofSignature</span><span class="p">,</span> <span class="n">padbits</span> <span class="o">=</span> <span class="n">spoof_digest</span><span class="p">(</span><span class="n">originalSignature</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">originalMsg</span><span class="p">),</span> <span class="n">appendedMsg</span><span class="p">)</span>
+
+    <span class="c"># This is how a legitimate user would construct the</span>
+    <span class="c"># a signature when message == originalMsg + padbits + appendedMsg</span>
+    <span class="n">testSignature</span> <span class="o">=</span> <span class="n">md5</span><span class="p">(</span><span class="n">originalMsg</span> <span class="o">+</span> <span class="n">padbits</span> <span class="o">+</span> <span class="n">appendedMsg</span><span class="p">)</span><span class="o">.</span><span class="n">digest</span><span class="p">()</span>
+
+    <span class="c"># make sure the spoof signature and the test signature match.</span>
+    <span class="c"># if, this passes, we&#39;ve successfully constructed a spoofed message</span>
+    <span class="c"># of the form: secret + orginal_message + padding + appended_message</span>
+    <span class="c"># without actually knowing the secret.</span>
+    <span class="k">assert</span> <span class="n">testSignature</span> <span class="o">==</span> <span class="n">spoofSignature</span>
+</pre></div>
+<p><strong> Information in this blog is meant for educational purposes only! </strong></p>
+
+    </div>
+
+    <br>
+    <br>
+
+    <div class="pitch">
+        Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
+    </div>
+
+    <br>
+    <br>
+    <br>
+
+    <!-- related posts -->
+    <div id="related">
+        <h3>Related Posts</h3>
+            
+            <div class="related-post">
+              <div class="related-post-date">26 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-with-vantage-point-trees/">Similarity search 101 - Part 2 (search with vp-trees)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">19 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-part-1/">Similarity search 101 - Part 1 (overview)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">14 Dec 2013</div>
+              <div class="related-post-title"><a href="/posts/faster-numpy-dot-product/">Faster Numpy Dot Product for Multi-dimensional Arrays</a></div>
+              <div class="clear"></div>
+            </div>
+            
+        </table>
+    </div>
+    <br> <br> <br>
+
+</div>
+
+<div class="header-rule"></div>
+<div class="content">
+
+
+    <!-- discussion -->
+    
+
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        var disqus_shortname = 'huyng';
+        var disqus_identifier = '512 http://www.huyng.com/?p=512';
+        var disqus_url = 'http://www.huyng.com/posts/dont-hash-your-secrets-heres-why-in-python/';
+
+        
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+        
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    
+
+</div>
+<!-- /POST -->
+        </div><!-- /content-container -->
+        <div class="clear"></div>
+        <br>
+        <br>
+        <br>
+    </div>
+
+
+    <!-- SCRIPTS -->
+    <script type="text/javascript"
+        src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="/static/bower_components/pixastic/pixastic.custom.js"></script>
+
+    <!-- colorbox -->
+    <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $(".post-content p img")
+                .colorbox({
+                    // no transition
+                    transition: "none",
+
+                    // use image src as href
+                    href: function () {
+                        return this.getAttribute('src');
+                    },
+
+                    title: function () {
+                        return this.getAttribute('alt');
+                    },
+
+
+                    // slightly dark bg
+                    opacity: 1,
+
+                    // set max widths x height
+                    scalePhotos: true,
+                    maxWidth: "85%",
+                    maxHeight: "80%",
+
+                    // make it so overlay is fixed
+                    fixed: true,
+
+                    // group photos in posts
+                    rel: "gallery"
+                });
+        });
+    </script>
+
+    <!-- page specific scripts -->
+    
+
+    
+</body>
+
+</html>

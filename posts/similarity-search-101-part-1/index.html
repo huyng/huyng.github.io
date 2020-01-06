@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Similarity search 101 - Part 1 (overview) &laquo; Searching Gradients with Huy</title>
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" href="/atom.xml" />
+    <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/syntax.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css">
+    <!-- <link href="https://fonts.googleapis.com/css?family=Lora&display=swap" rel="stylesheet"> -->
+    <link href="https://fonts.googleapis.com/css?family=Lora|Rock+Salt&display=swap" rel="stylesheet">
+
+
+
+
+    <!-- fonts -->
+    <link href="//netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
+
+    <!-- javascript -->
+    <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
+
+    <!-- google analytics -->
+    <script type="text/javascript">
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-6813218-1']);
+        _gaq.push(['_trackPageview']);
+
+        // count visits longer than 15 secs as
+        setTimeout("_gaq.push(['_trackEvent', '15_seconds', 'read'])", 15000);
+
+        (function () {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+
+</head>
+
+<body>
+    <div class="container">
+        <br>
+        <div class="site-title"><a href="/">Searching Gradients</a></div>
+        <br>
+        <div id="nav-container">
+            <ul class="nav" style="width:100%;">
+                <li><a href="/">
+                        <span style="color:#444"><i class="icon-align-justify icon-medium"></i></span>
+                        posts</a></li>
+                <li><a href="https://everyhue.me/">
+                        <span style="color:#444"><i class="icon-gamepad icon-medium"></i></span>
+                        about</a></li>
+                <li class="social-media-nav">
+                    <a id="twitter" href="http://twitter.com/huyng">
+                        <span style="color:#444"><i class="icon-twitter icon-medium"></i></span>
+                        twitter
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="github" href="https://github.com/huyng">
+                        <span style="color:#444"><i class="icon-github icon-medium"></i></span>
+                        github
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="rss" href="/atom.xml">
+                        <span style="color:#444"><i class="icon-rss-sign icon-medium"></i></span>
+                        feed
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="clear"></div>
+
+        <br>
+        <center>
+            <img src="/static/images/welder.jpg" alt="Header photo - welder" width="100%" />
+        </center>
+
+        <div id="content-container">
+            <!-- POST -->
+
+<br>
+<br>
+<!-- <div class="header-rule"></div> -->
+<div class="post content">
+    <div class="post-date">19 Mar 2014</div><br><br>
+
+    
+    <h2 class="post-title"><a href="/posts/similarity-search-101-part-1/">Similarity search 101 - Part 1 (overview)</a></h2>
+
+    <br>
+    <div class="post-content">
+    <p>In my work applying machine learning technologies, finding “similar” items is  one of the most common challenges that people come to my team with:</p>
+
+<ul>
+  <li>“Can you find me the image that looks like this other image?”</li>
+  <li>“Which webpage is similar to this webpage?”</li>
+  <li>“Which song matches this audio clip I’ve recorded?”</li>
+</ul>
+
+<p>To more formally define the <em>similarity task</em>, let’s assume we have a big database of items. Solving the this task means that when we are given a new item – let’s call it the <em>query</em> – our algorithm is able to locate within the database the closest or most similar items to the query.</p>
+
+<p>Whether we’re dealing with pictures, audio clips, faces, documents, or DNA sequences, we can approach solving this problem using a common framework which I briefly summarize below.</p>
+
+<h3 id="feature-extraction">Feature extraction</h3>
+
+<p>First we need to know how to “represent” each item in our data set as a series of numbers. This process is often called “feature extraction” or “feature representation”.</p>
+
+<p>There is a large field of research focused on finding good feature representations for all kinds of data. And while it may not yield the most optimal results in terms of discounting noise in our data, we can take the raw signals themselves and convert them verbatim into our “feature vector” as a first step in building our similarity search engine.</p>
+
+<p>So for example, if our dataset is made up of 16 x 16 gray scale images, we would take the pixel value of each row and store them as an array of 256 numbers.</p>
+
+<p><img src="/media/3015/extract-features.png" alt="feature extraction" /></p>
+
+<h3 id="defining-a-similarity-metric">Defining a similarity metric</h3>
+
+<p>Once we have a feature vector for every item in our dataset, we need a way of comparing one feature vector to another feature vector. If we view each feature vector as a point in some n-dimensional space, one can use the euclidean distance between two points <script type="math/tex">p</script> and <script type="math/tex">q</script> as a similarity metric:</p>
+
+<script type="math/tex; mode=display">distance = \sqrt{\sum_{i=1}^n (q_i-p_i)^2}</script>
+
+<h3 id="brute-force-similarity-search">Brute force similarity search</h3>
+
+<p>With the similarity metric and a feature extraction routine in place, we pretty much have a complete working similarity search system, albeit an efficient one. If given a query <script type="math/tex">q</script>, we can find the closest item to <script type="math/tex">q</script> in dataset <script type="math/tex">D</script> using the following routine:</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">find_nearest</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">D</span><span class="p">):</span>
+    <span class="n">nearest_neighbor</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">min_distance</span> <span class="o">=</span> <span class="n">infinity</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">D</span><span class="p">:</span>
+        <span class="n">distance</span> <span class="o">=</span> <span class="n">compute_distance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">min_distance</span> <span class="o">&gt;</span> <span class="n">distance</span><span class="p">:</span>
+            <span class="n">min_distance</span> <span class="o">=</span> <span class="n">distance</span>
+            <span class="n">nearest_neighbor</span> <span class="o">=</span> <span class="n">p</span>
+    <span class="k">return</span> <span class="n">nearest_neighbor</span></code></pre></figure>
+
+<p>The approach above scales in <script type="math/tex">O(m \times n)</script> time where <script type="math/tex">m</script> is the number of items in our dataset <script type="math/tex">D</script> and <script type="math/tex">n</script> is the number of dimensions in our feature vector. So even for a modest database size of 1000 items and a feature vector of 256 dimensions, we could be computing up to 256 thousand operations with every single query!</p>
+
+<h3 id="to-be-continued-">To be continued …</h3>
+
+<p>In the next part of this series, we’ll take a look at using <a href="https://en.wikipedia.org/wiki/Vantage-point_tree">vantage point trees</a> to see how we can more efficiently store our data set so that it’s less computationally intensive to search over.</p>
+
+<p><a href="/posts/similarity-search-101-with-vantage-point-trees/"><strong>continue to part 2 →</strong></a></p>
+
+
+    </div>
+
+    <br>
+    <br>
+
+    <div class="pitch">
+        Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
+    </div>
+
+    <br>
+    <br>
+    <br>
+
+    <!-- related posts -->
+    <div id="related">
+        <h3>Related Posts</h3>
+            
+            <div class="related-post">
+              <div class="related-post-date">26 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-with-vantage-point-trees/">Similarity search 101 - Part 2 (search with vp-trees)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">14 Dec 2013</div>
+              <div class="related-post-title"><a href="/posts/faster-numpy-dot-product/">Faster Numpy Dot Product for Multi-dimensional Arrays</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">30 Oct 2013</div>
+              <div class="related-post-title"><a href="/posts/json-streaming-record-data-format/">The JSON Streaming Record (JSRec) data format</a></div>
+              <div class="clear"></div>
+            </div>
+            
+        </table>
+    </div>
+    <br> <br> <br>
+
+</div>
+
+<div class="header-rule"></div>
+<div class="content">
+
+
+    <!-- discussion -->
+    
+
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        var disqus_shortname = 'huyng';
+        var disqus_identifier = 'http://www.huyng.com/posts/similarity-search-101-part-1/';
+        var disqus_url = 'http://www.huyng.com/posts/similarity-search-101-part-1/';
+
+        
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+        
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    
+
+</div>
+<!-- /POST -->
+        </div><!-- /content-container -->
+        <div class="clear"></div>
+        <br>
+        <br>
+        <br>
+    </div>
+
+
+    <!-- SCRIPTS -->
+    <script type="text/javascript"
+        src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="/static/bower_components/pixastic/pixastic.custom.js"></script>
+
+    <!-- colorbox -->
+    <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $(".post-content p img")
+                .colorbox({
+                    // no transition
+                    transition: "none",
+
+                    // use image src as href
+                    href: function () {
+                        return this.getAttribute('src');
+                    },
+
+                    title: function () {
+                        return this.getAttribute('alt');
+                    },
+
+
+                    // slightly dark bg
+                    opacity: 1,
+
+                    // set max widths x height
+                    scalePhotos: true,
+                    maxWidth: "85%",
+                    maxHeight: "80%",
+
+                    // make it so overlay is fixed
+                    fixed: true,
+
+                    // group photos in posts
+                    rel: "gallery"
+                });
+        });
+    </script>
+
+    <!-- page specific scripts -->
+    
+
+    
+</body>
+
+</html>
