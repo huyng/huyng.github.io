@@ -12,29 +12,20 @@
     <!-- <link href="https://fonts.googleapis.com/css?family=Lora&display=swap" rel="stylesheet"> -->
     <link href="https://fonts.googleapis.com/css?family=Lora|Rock+Salt&display=swap" rel="stylesheet">
 
-
-
-
     <!-- fonts -->
     <link href="//netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
 
     <!-- javascript -->
     <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
 
-    <!-- google analytics -->
-    <script type="text/javascript">
-        var _gaq = _gaq || [];
-        _gaq.push(['_setAccount', 'UA-6813218-1']);
-        _gaq.push(['_trackPageview']);
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-140409395-3"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
 
-        // count visits longer than 15 secs as
-        setTimeout("_gaq.push(['_trackEvent', '15_seconds', 'read'])", 15000);
-
-        (function () {
-            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-        })();
+        gtag('config', 'UA-140409395-3');
     </script>
 
 </head>
