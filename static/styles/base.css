@@ -38,8 +38,8 @@ h5 {font-size: 1.1em}	/* 16px */
 h6 {font-size: 1em} 	/* 14px */
 h2, h3, h4, h5, h6 {
 	line-height: 1.1;
-    font-weight:600;
-	margin-bottom: .8em;
+    font-weight: 600;
+    margin-bottom: .8em;
 }
 
 /* Anchors */
@@ -76,11 +76,11 @@ em, i {
 /* rulers */
 hr {
     display: block;
-    margin: 2em auto;
+    margin: 1em auto;
     width: 100%;
     clear: both;
     border: none;
-    border-top: 1px solid #AAA;
+    border-top: 1px solid #ddd;
     line-height: 0;
     overflow: visible;
 }
@@ -185,9 +185,7 @@ div.post {
 
 div.post-date {
     color: #888;
-    text-align:center;
     font-size:.8em;
-    margin-left:-10px;
 }
 div.advertisement {
     /*background: #fafafa;*/
@@ -220,15 +218,17 @@ div.header-rule {
     margin:10px auto;
     font-weight: 600;
     line-height: 1.5em;
-    font-family: 'Rock Salt', "Avenir", "Helvetica", sans-serif;
+    /* font-family: 'Rock Salt', "Avenir", "Helvetica", sans-serif; */
+    font-family: "Avenir", "Helvetica", sans-serif;
 }
 .site-title a {
     /*color: #5bcaff !important;*/
     transition: color .500s;
     transition-timing-function: ease;
+    color: #8A391B;
 }
 .site-title a:hover {
-    /*color: #E7EAEF !important;*/
+/*color: #E7EAEF !important;*/
 }
 
 img.icon {
@@ -319,16 +319,18 @@ div.related-post {
     clear:both;
 }
 div.related-post-date {
-
+    color: #888;
+    font-size:.8em;
 }
+
 div.related-post-title {
 
 }
 
 
 .pitch {
-    border-top:1px dotted #007aff;
-    border-bottom:1px dotted #007aff;
+    border-top:1px dotted #8A391B;
+    border-bottom:1px dotted #8A391B;
     padding:2em;
 }
 .pitch a {
