@@ -8,10 +8,10 @@
     <link rel="shortcut icon" href="/static/images/favicon.ico">
     <link rel="alternate" type="application/rss+xml" href="/atom.xml" />
     <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
-    <link rel="stylesheet" href="/static/styles/syntax.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/monokai.css" type="text/css" media="screen" charset="utf-8">
     <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css">
     <!-- <link href="https://fonts.googleapis.com/css?family=Lora&display=swap" rel="stylesheet"> -->
-    <link href="https://fonts.googleapis.com/css?family=Lora|Rock+Salt&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Lora:400,700|Rock+Salt&display=swap" rel="stylesheet">
 
     <!-- fonts -->
     <link href="//netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
@@ -32,6 +32,7 @@
 
 <body>
     <div class="container">
+
 
         <br>
         <div class="site-title"><a href="/">Searching Gradients</a></div>
@@ -59,13 +60,14 @@
                 <li class="social-media-nav">
                     <a id="rss" href="/atom.xml">
                         <!-- <span style="color:#444"><i class="icon-rss-sign icon-medium"></i></span> -->
-                        feed
+                       rss
                     </a>
                 </li>
             </ul>
         </div>
     </div>
-
+    <br>
+    <hr>
     <div class="container">
         
 
@@ -73,17 +75,16 @@
             <!-- POST -->
 
 
-<br>
-<br>
 <!-- <div class="header-rule"></div> -->
 <div class="post content">
     
-    <div class="post-date">30 Oct 2013</div>
+    <div class="post-date">
+        30 Oct 2013 &nbsp; &ndash; &nbsp; <a style="color:#888" href="https://everyhue.me">Huy Nguyen</a>
+    </div>
     <br>
     <h2 class="post-title"><a href="/posts/json-streaming-record-data-format/">The JSON Streaming Record (JSRec) data format</a></h2>
-    <br>
     <div class="post-content">
-    <p>I’m inventing a new data format (as blasphemous as it sounds). 
+    <p>I’m inventing a new data format (as blasphemous as it sounds).
 It’s flexible, human readable, easy to produce, and best of
  all, nearly impossible to screw up parsing.</p>
 
@@ -92,7 +93,7 @@ worry about quoting, escaping, or deciding whether your “comma” sepearated
 values turn out to really mean semicolon or even worse, tab delimited.</p>
 
 <p>The new data format is called <strong>json streaming record</strong> or <strong>JSRec</strong> for short.
-While I say it’s “new”, I’m sure many of you have either produced or 
+While I say it’s “new”, I’m sure many of you have either produced or
 consumed this type of data already at some point in your career.</p>
 
 <p>Here’s how it’s defined:</p>
@@ -135,7 +136,7 @@ consumed this type of data already at some point in your career.</p>
         <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
             <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span> <span class="o">+</span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span></code></pre></figure>
 
-<h5 id="a-new-use-case-building-data-processing-pipelines-with-jsrec">A new use case: building data processing pipelines with JSRec</h5>
+<h3 id="a-new-use-case-building-data-processing-pipelines-with-jsrec">A new use case: building data processing pipelines with JSRec</h3>
 
 <p>Because each line in a JSRec file contains all the information necessary
 to parse a record, you can use it to pipe output from one program to another:</p>
@@ -147,15 +148,15 @@ to parse a record, you can use it to pipe output from one program to another:</p
 them together. This is HUGE because it makes building data processing pipelines
 on the commandline a modular and simple task.</p>
 
-<h5 id="when-to-use-it">When to use it</h5>
+<h3 id="when-to-use-it">When to use it</h3>
 
 <p>Json Streaming Record is an ideal replacement for CSV files. Use it when you want a
 data format that can store “streams” of records that are human readable yet easily
 parsed by a machine.</p>
 
 <p>With each line of the format being a completely self-contained JSON object, JSRec
-allows you to produce and consume data in an incremental fashion. I encourage you to start 
-using it as a data format to pass around on the commandline for when you’re 
+allows you to produce and consume data in an incremental fashion. I encourage you to start
+using it as a data format to pass around on the commandline for when you’re
 building those data processing pipelines.</p>
 
 
@@ -166,7 +167,7 @@ building those data processing pipelines.</p>
 
     <div class="pitch">
         <div style="float:left; margin-right: 2em;">
-            <img style="border-radius: 50px;" src="https://pbs.twimg.com/profile_images/1207002509836877825/hTmuaFp7_400x400.jpg" width=75 alt="">
+            <img style="border-radius: 50px;" src="/static/images/author.jpg" width=96 alt="">
         </div>
         Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
     </div>
@@ -180,6 +181,12 @@ building those data processing pipelines.</p>
         <h3>Related Posts</h3>
             
             <div class="related-post">
+              <div class="related-post-date">20 Jan 2020</div>
+              <div class="related-post-title"><a href="/posts/why-uncertainty-matters/">Why Uncertainty Matters in Deep Learning and How to Estimate It</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
               <div class="related-post-date">26 Mar 2014</div>
               <div class="related-post-title"><a href="/posts/similarity-search-101-with-vantage-point-trees/">Similarity search 101 - Part 2 (Fast retrieval with vp-trees)</a></div>
               <div class="clear"></div>
@@ -191,17 +198,11 @@ building those data processing pipelines.</p>
               <div class="clear"></div>
             </div>
             
-            <div class="related-post">
-              <div class="related-post-date">14 Dec 2013</div>
-              <div class="related-post-title"><a href="/posts/faster-numpy-dot-product/">Faster Numpy Dot Product for Multi-dimensional Arrays</a></div>
-              <div class="clear"></div>
-            </div>
-            
         </table>
     </div>
     <br> <br> <br>
 
-</div>
+<!-- </div> -->
 
 <div class="header-rule"></div>
 <div class="content">
@@ -248,7 +249,7 @@ building those data processing pipelines.</p>
     <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
     <script type="text/javascript">
         $(document).ready(function () {
-            $(".post-content p img")
+            $(".post-content p img, .post-content figure img")
                 .colorbox({
                     // no transition
                     transition: "none",

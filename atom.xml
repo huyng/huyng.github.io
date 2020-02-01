@@ -4,12 +4,342 @@
  <title>Searching Gradients with Huy Nguyen</title>
  <link href="http://blog.everyhue.me/atom.xml" rel="self"/>
  <link href="http://blog.everyhue.me/"/>
- <updated>2020-01-17T00:53:57-08:00</updated>
+ <updated>2020-02-01T09:37:27-08:00</updated>
  <id>http://blog.everyhue.me/</id>
  <author>
    <name>Huy Nguyen</name>
  </author>
 
+ 
+ <entry>
+   <title>Why Uncertainty Matters in Deep Learning and How to Estimate It</title>
+   <link href="http://blog.everyhue.me/posts/why-uncertainty-matters/"/>
+   <updated>2020-01-20T00:00:00-08:00</updated>
+   <id>http://blog.everyhue.me/posts/why-uncertainty-matters</id>
+   
+
+   <content type="html">&lt;ul id=&quot;markdown-toc&quot;&gt;
+  &lt;li&gt;&lt;a href=&quot;#more-trustworthy-models&quot; id=&quot;markdown-toc-more-trustworthy-models&quot;&gt;More trustworthy models&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#uncertainty-estimates-what-are-they-good-for&quot; id=&quot;markdown-toc-uncertainty-estimates-what-are-they-good-for&quot;&gt;Uncertainty estimates, what are they good for?&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#where-does-uncertainty-come-from&quot; id=&quot;markdown-toc-where-does-uncertainty-come-from&quot;&gt;Where does uncertainty come from?&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#how-to-estimate-uncertainty-overview&quot; id=&quot;markdown-toc-how-to-estimate-uncertainty-overview&quot;&gt;How to estimate uncertainty (overview)&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#monte-carlo-dropout&quot; id=&quot;markdown-toc-monte-carlo-dropout&quot;&gt;Monte Carlo Dropout&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#deep-ensembles&quot; id=&quot;markdown-toc-deep-ensembles&quot;&gt;Deep Ensembles&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#regression&quot; id=&quot;markdown-toc-regression&quot;&gt;Estimating uncertainty for regression&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#classification&quot; id=&quot;markdown-toc-classification&quot;&gt;Estimating uncertainty for classification&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#sample-code&quot; id=&quot;markdown-toc-sample-code&quot;&gt;Sample code&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#evaluation&quot; id=&quot;markdown-toc-evaluation&quot;&gt;How good are these uncertainty estimates?&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#moving-beyond-traditional-leaderboard-metrics&quot; id=&quot;markdown-toc-moving-beyond-traditional-leaderboard-metrics&quot;&gt;Moving beyond traditional leaderboard metrics&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#references&quot; id=&quot;markdown-toc-references&quot;&gt;References&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;more-trustworthy-models&quot;&gt;More trustworthy models&lt;/h3&gt;
+
+&lt;p&gt;For &lt;a href=&quot;https://arxiv.org/abs/1606.06565&quot;&gt;safety&lt;/a&gt; critical systems and infrastructure, you need to know when to trust a model’s prediction and when you should be more cautious about its output.&lt;/p&gt;
+
+&lt;p&gt;Suppose you train a model to detect pedestrians, but you only have access to &lt;em&gt;day time&lt;/em&gt; video feeds as training data due to data constraints. You would expect this model to fail miserably at &lt;em&gt;night&lt;/em&gt; since the videos would look nothing like the data the model was trained on. From your perspective this problem is easy to see, but would your model know that it’s operating in a completely new environment? Or would it just go about predicting everything at night as “no pedestrian”?&lt;/p&gt;
+
+&lt;p&gt;How would you know when to trust your model?&lt;/p&gt;
+
+&lt;p&gt;The problem with conventional deep neural networks is that they only provide &lt;a href=&quot;https://en.wikipedia.org/wiki/Point_estimation&quot;&gt;point-estimates&lt;/a&gt; which are single predictive values given some input data. What you don’t get with these models is a measure of how uncertain they are for any given prediction.&lt;/p&gt;
+
+&lt;!-- For classification, these predictions take the form of a single class label (and a softmax score), and in the case of regression, a single output number. --&gt;
+
+&lt;p&gt;While the softmax “probability” of a neural network classifier is commonly interpreted and used as a heuristic for uncertainty, scientists have shown that this measure often &lt;a href=&quot;https://arxiv.org/abs/1412.1897&quot;&gt;overestimates its confidence&lt;/a&gt;, even on examples that are unrecognizable when compared to a model’s training set.&lt;/p&gt;
+
+&lt;p&gt;What you really need is an &lt;em&gt;accurate&lt;/em&gt; measure of uncertainty.&lt;/p&gt;
+
+&lt;p&gt;An &lt;em&gt;accurate&lt;/em&gt; measure of uncertainty lets your model say “I don’t know” when it encounters a distribution of data that it wasn’t trained with or when it evaluates an example that can be interpreted in multiple ways.&lt;/p&gt;
+
+&lt;!-- If you had access to such a measure, you'd be able to take different and more [useful](#what_you_can_do) actions based upon how confident the model was of its prediction. --&gt;
+
+&lt;h3 id=&quot;uncertainty-estimates-what-are-they-good-for&quot;&gt;Uncertainty estimates, what are they good for?&lt;/h3&gt;
+
+&lt;p&gt;A &lt;em&gt;good&lt;/em&gt; uncertainty estimate gives you more flexibility. You don’t have to always assign the same amount of trust to every model prediction, and likewise, you don’t always have to take the same action based upon those predictions.&lt;/p&gt;
+
+&lt;p&gt;For example, when uncertainty is high you can decide to:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Refrain from taking any action on the prediction at all.&lt;/li&gt;
+  &lt;li&gt;Refer the particular piece of data to a human to make a final call.&lt;/li&gt;
+  &lt;li&gt;Collect more examples that cause high uncertainty to retrain your model.&lt;/li&gt;
+  &lt;li&gt;Implement a tiered prediction strategy by sending the data to a slower, but more accurate model, when uncertainty is high.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Blindly assigning the same amount of trust and action for every model prediction can lead to &lt;a href=&quot;https://www.wired.com/story/when-it-comes-to-gorillas-google-photos-remains-blind/&quot;&gt;embarrassing&lt;/a&gt;, &lt;a href=&quot;https://mpra.ub.uni-muenchen.de/69383/1/MPRA_paper_69383.pdf&quot;&gt;serious&lt;/a&gt;, or even &lt;a href=&quot;https://www.ntsb.gov/news/events/Pages/2019-HWY18MH010-BMG.aspx&quot;&gt;fatal&lt;/a&gt; mistakes in your autonomous systems.&lt;/p&gt;
+
+&lt;h3 id=&quot;where-does-uncertainty-come-from&quot;&gt;Where does uncertainty come from?&lt;/h3&gt;
+
+&lt;p&gt;We have to understand where uncertainty comes from to know how we can account for it in our models. Let’s look at two major sources of uncertainty in predictive modeling below.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Aleatoric uncertainty&lt;/strong&gt; is uncertainty arising from noisy data. The noise can come from observation noise or it can come from the underlying process itself. High Aleatoric uncertainty indicate that small changes in the input data lead to large variances in the target data.&lt;/p&gt;
+
+&lt;!-- ![image](https://user-images.githubusercontent.com/121183/73386945-95872600-4284-11ea-89f1-3cfc6f377715.png) --&gt;
+
+&lt;figure style=&quot;float:left; width: 45%; margin-right:1em;&quot; class=&quot;fig&quot;&gt;
+    &lt;img src=&quot;/media/3017/aleatoric_uncertainty_obs.png&quot; height=&quot;200&quot; /&gt;
+    &lt;figcaption&gt;
+    Noisy measurements of an underlying process leading to high Aleatoric uncertainty.
+    &lt;/figcaption&gt;
+&lt;/figure&gt;
+&lt;figure style=&quot;float:left; width:45%;&quot; class=&quot;fig&quot;&gt;
+    &lt;img src=&quot;/media/3017/aleatoric_uncertainty_prc.png&quot; height=&quot;200&quot; /&gt;
+    &lt;figcaption&gt;
+    Even with error-less observations, a noisy underlying process can give rise to high Aleatoric uncertainty.
+    &lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;&lt;strong&gt;Epistemic uncertainty&lt;/strong&gt; is uncertainty arising from a noisy model. Given the same input, high epistemic uncertainty indicate that small changes in model parameters give rise to large changes in model predictions. This type of uncertainty commonly occurs when models are evaluated on data whose distribution is different from the training data.&lt;/p&gt;
+
+&lt;figure class=&quot;fig&quot;&gt;
+    &lt;img src=&quot;/media/3017/epistemic_uncertainty.png&quot; width=&quot;100%&quot; /&gt;
+    &lt;figcaption&gt;
+    Epistemic uncertainty can arise in regions of the data space where there are few observations for training. This is because when there is little training data, many plausible model parameters may suffice for explaining the underlying ground truth phenomenon.
+    &lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;!-- When deploying models into real-world use cases, it is not uncommon for your model to encounter data that comes from a distribution that is drastically different than the one that it was trained on. Or alternatively, your data distribution may shift over time.
+
+For example, let's say you trained a *dogs* vs. *cats* image classifier using a conventional convolutional neural network. Without uncertainty, you would be unable to determine that a photo of a *car* belonged to neither of these classes. In effect, your model would be forced to make a prediction of either *cat* or *dog* instead of being able to predict &quot;I don't know&quot; when encountering new data. --&gt;
+
+&lt;!-- While the above example covers a benign situation, the shortcomings of a model without uncertainty estimates  extends to more serious situations, such as in medical tasks like [detecting diabetic retinopathy detection][diabetic] using images of retinas. --&gt;
+
+&lt;!-- For further info, see  [section 1.2][yaringal_intro] of Yarin Gal's Thesis on Bayesian Learning. --&gt;
+
+&lt;!-- ![uncertainty](https://media.springernature.com/full/springer-static/image/art%3A10.1038%2Fs41598-017-17876-z/MediaObjects/41598_2017_17876_Fig5_HTML.jpg?as=webp) --&gt;
+
+&lt;h3 id=&quot;how-to-estimate-uncertainty-overview&quot;&gt;How to estimate uncertainty (overview)&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://proceedings.mlr.press/v48/gal16.pdf&quot;&gt;Monte Carlo Dropout&lt;/a&gt; and &lt;a href=&quot;https://arxiv.org/abs/1612.01474&quot;&gt;Model Ensembling&lt;/a&gt; are popular methods for estimating uncertainty in deep learning. These methods try to account for both aleatoric and epistemic uncertainty.&lt;/p&gt;
+
+&lt;p&gt;Although the authors behind these methods give different motivations for their work, both approach the problem of estimating uncertainty using a similar strategy:&lt;/p&gt;
+
+&lt;p&gt;They first propose modifying your neural network to &lt;em&gt;estimate probability distributions&lt;/em&gt; rather than point-estimates (we talk more on this for the tasks of &lt;a href=&quot;#regression&quot;&gt;regression&lt;/a&gt; and &lt;a href=&quot;#classification&quot;&gt;classification&lt;/a&gt; below). In doing so, we allow our models to capture Aleatoric Uncertainty during training.&lt;/p&gt;
+
+&lt;p&gt;Second, they propose that at prediction time, you sample and combine predictions from multiple realizations of your neural network to get a final prediction and its uncertainty. This procedure helps our networks capture Epistemic uncertainty.&lt;/p&gt;
+
+&lt;h4 id=&quot;monte-carlo-dropout&quot;&gt;Monte Carlo Dropout&lt;/h4&gt;
+
+&lt;p&gt;The deep learning community often uses &lt;a href=&quot;https://www.cs.toronto.edu/~hinton/absps/JMLRdropout.pdf&quot;&gt;Dropout&lt;/a&gt; to prevent models from overfitting. The idea is easy to implement: just randomly zero-out activations in your neural network with rate &lt;script type=&quot;math/tex&quot;&gt;p&lt;/script&gt; at training time and scale your activations by &lt;script type=&quot;math/tex&quot;&gt;p&lt;/script&gt; at test-time.&lt;/p&gt;
+
+&lt;p&gt;It turns out Dropout with some modifications is also useful for estimating uncertainty as described by &lt;a href=&quot;http://proceedings.mlr.press/v48/gal16.pdf&quot;&gt;Gal and Ghahramani&lt;/a&gt;. As long as your neural networks are trained with a few Dropout layers, you can use this method at prediction-time to obtain an estimate of uncertainty for your model.&lt;/p&gt;
+
+&lt;p&gt;The approach works by combining the predictions of several “realizations” of your neural network, which are essentially multiple forward passes of the same data point &lt;script type=&quot;math/tex&quot;&gt;\mathbf{x}&lt;/script&gt; through your network while applying different dropout masks &lt;script type=&quot;math/tex&quot;&gt;\mathbf{w}_t&lt;/script&gt;.&lt;/p&gt;
+
+&lt;p&gt;Unlike traditional Dropout networks, Monte Carlo Dropout (MC Dropout) networks applies dropout both at train-time and at test-time.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Algorithm:&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Train a neural network &lt;script type=&quot;math/tex&quot;&gt;f_\theta(\mathbf{x})&lt;/script&gt; containing Dropout layers and a probabilistic loss appropriate for either your &lt;a href=&quot;#regression&quot;&gt;regression&lt;/a&gt; or &lt;a href=&quot;#classification&quot;&gt;classification&lt;/a&gt; task (see below) .&lt;/li&gt;
+  &lt;li&gt;At test time, perform &lt;script type=&quot;math/tex&quot;&gt;T&lt;/script&gt; stochastic forward passes through &lt;script type=&quot;math/tex&quot;&gt;f_\theta(\mathbf{x})&lt;/script&gt; to obtain predictions for input &lt;script type=&quot;math/tex&quot;&gt;\mathbf{x}&lt;/script&gt;.&lt;/li&gt;
+  &lt;li&gt;Depending on whether you are doing &lt;a href=&quot;#regression_pred&quot;&gt;regression&lt;/a&gt; or &lt;a href=&quot;#classification_pred&quot;&gt;classification&lt;/a&gt;, “combine” predictions as described below to obtain an Expectation-based prediction and uncertainty estimate.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h4 id=&quot;deep-ensembles&quot;&gt;Deep Ensembles&lt;/h4&gt;
+
+&lt;p&gt;Another way to estimate uncertainty is by using model ensembling as described in the paper &lt;a href=&quot;https://arxiv.org/abs/1612.01474&quot;&gt;Simple and Scalable Predictive Uncertainty Estimation using Deep Ensembles&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The approach is quite similar to MC Dropout, and in fact, one way to interpret MC Dropout is to view it as a form of model ensembling.&lt;/p&gt;
+
+&lt;p&gt;The major difference with this approach is that rather than using a &lt;em&gt;single&lt;/em&gt; trained network to make predictions with several randomly sampled dropout masks, we use &lt;script type=&quot;math/tex&quot;&gt;M&lt;/script&gt; trained models initialized from random starting points to collect our Monte Carlo samples.&lt;/p&gt;
+
+&lt;h4 id=&quot;regression&quot;&gt;Estimating uncertainty for regression&lt;/h4&gt;
+
+&lt;p&gt;&lt;strong&gt;Defining the Probabilistic Loss Function:&lt;/strong&gt; When training models for the regression task, we usually minimize the error between some target values &lt;script type=&quot;math/tex&quot;&gt;y&lt;/script&gt; and predicted values &lt;script type=&quot;math/tex&quot;&gt;\hat{y}&lt;/script&gt; using the &lt;a href=&quot;https://en.wikipedia.org/wiki/Mean_squared_error&quot;&gt;Mean Squared Error&lt;/a&gt; loss.&lt;/p&gt;
+
+&lt;p&gt;To obtain uncertainty estimates with MC Dropout or Model Ensembling however, we must take a more probabalistic view. Rather than predicting a single scalar value &lt;script type=&quot;math/tex&quot;&gt;\hat{y}&lt;/script&gt;, we assume our target data is normally distributed and predict a &lt;a href=&quot;https://en.wikipedia.org/wiki/Normal_distribution&quot;&gt;Gaussian distribution&lt;/a&gt; &lt;script type=&quot;math/tex&quot;&gt;\mathcal{N}&lt;/script&gt; parameterized with mean &lt;script type=&quot;math/tex&quot;&gt;\hat{\mu}&lt;/script&gt; and variance &lt;script type=&quot;math/tex&quot;&gt;\hat{\sigma}^2&lt;/script&gt;.&lt;/p&gt;
+
+&lt;p&gt;\begin{equation}
+    \hat{\mu}, \hat{\sigma}^2 = f_\theta(\mathbf{x})
+\end{equation}&lt;/p&gt;
+
+&lt;p&gt;\begin{equation}
+    p_{\theta}(y | \mathbf{x}) = \mathcal{N}(\hat{\mu}, \hat{\sigma}^2)
+\end{equation}&lt;/p&gt;
+
+&lt;p&gt;For our loss, instead of minimizing the difference to the predicted and target variable, we minimize the difference of our predictive distribution to the target distribution using the &lt;a href=&quot;https://www.cs.princeton.edu/courses/archive/spring08/cos424/scribe_notes/0214.pdf&quot;&gt;Negative Log Likelihood&lt;/a&gt; loss:&lt;/p&gt;
+
+&lt;p&gt;\begin{equation}
+    - \log{p_{\theta}(y | \mathbf{x}}) = \frac{\log{\hat{\sigma}^2}}{2} + \frac{(y - \hat{\mu})^2}{2\hat{\sigma}^2}
+\end{equation}&lt;/p&gt;
+
+&lt;p&gt;(As an aside, I find this loss quite facinating. Notice here, we’re never explicitly providing the network an “uncertainty label” or target &lt;script type=&quot;math/tex&quot;&gt;\sigma^2&lt;/script&gt;. The network implicitly learns to capture the variance through the balance of the &lt;script type=&quot;math/tex&quot;&gt;\hat{\sigma}^2&lt;/script&gt; terms in the numerator and denominator.)&lt;/p&gt;
+
+&lt;p id=&quot;regression_pred&quot;&gt;&lt;strong&gt;Making Predictions and Quantifying Uncertainty:&lt;/strong&gt; Once we’ve trained our model, if we’re performing Monte Carlo Dropout, we sample dropout masks &lt;script type=&quot;math/tex&quot;&gt;\mathbf{w_t}&lt;/script&gt; and perform forward passes through &lt;script type=&quot;math/tex&quot;&gt;f_\theta(\mathbf{x; \mathbf{w_t}})&lt;/script&gt; to obtain &lt;script type=&quot;math/tex&quot;&gt;T&lt;/script&gt; samples:&lt;/p&gt;
+
+&lt;p&gt;\begin{equation}
+    \hat{\mu}_{t}, \hat{\sigma}_{t}^2 =  f_\theta(\mathbf{x; \mathbf{w_t}})
+\end{equation}&lt;/p&gt;
+
+&lt;p&gt;With these Monte Carlo samples &lt;script type=&quot;math/tex&quot;&gt;\hat{\mu}_{t}&lt;/script&gt; , &lt;script type=&quot;math/tex&quot;&gt;\hat{\sigma}_{t}^2&lt;/script&gt; in hand, we can now compute our final regression prediction &lt;script type=&quot;math/tex&quot;&gt;\hat{y}_{\ast}&lt;/script&gt; and its uncertainty &lt;script type=&quot;math/tex&quot;&gt;\hat{\sigma}_{\ast}^{2}&lt;/script&gt; :&lt;/p&gt;
+
+&lt;p&gt;\begin{equation}
+    \hat{y}_{\ast} = \frac{1}{T}\sum_{t\in{T}}{\hat{\mu}_{t}}
+\end{equation}&lt;/p&gt;
+
+&lt;p&gt;\begin{equation}
+    \hat{\sigma}_{\ast}^{2} = \frac{1}{T}\sum_{t\in{T}}{(\hat{\sigma}_{t}^2 + \hat{\mu}_{t}^2)} - \hat{y}_{\ast}^2
+\end{equation}&lt;/p&gt;
+
+&lt;p&gt;If we’re using Model Ensembling, rather than performing &lt;script type=&quot;math/tex&quot;&gt;T&lt;/script&gt; forward passes through a single network with randomly sampled &lt;script type=&quot;math/tex&quot;&gt;\mathbf{w}_t&lt;/script&gt; dropout masks, we instead get our predictions from &lt;script type=&quot;math/tex&quot;&gt;M&lt;/script&gt; trained models whose parameters &lt;script type=&quot;math/tex&quot;&gt;\mathbf{\theta}_m&lt;/script&gt; are initialized to random starting points. Everything else remains the same.&lt;/p&gt;
+
+&lt;p&gt;Note: These formulations were described in follow-on papers to the MC Dropout paper from &lt;a href=&quot;https://arxiv.org/abs/1703.04977&quot;&gt;Kendall and Gal&lt;/a&gt; and &lt;a href=&quot;https://arxiv.org/abs/1612.01474&quot;&gt;Lakshminarayanan et. al&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h4 id=&quot;classification&quot;&gt;Estimating uncertainty for classification&lt;/h4&gt;
+
+&lt;p&gt;&lt;strong&gt;Defining the Probabilistic Loss Function:&lt;/strong&gt; The great news is that for classification, we do not need to modify the loss in order to obtain meaningful uncertainty estimates using Monte Carlo Dropout or Model Ensembling. This is because the predictions of a conventional neural network classifier uses the &lt;a href=&quot;https://en.wikipedia.org/wiki/Softmax_function&quot;&gt;Softmax&lt;/a&gt; function which already parameterizes a discrete probability distribution.&lt;/p&gt;
+
+&lt;p&gt;Likewise, the &lt;a href=&quot;https://en.wikipedia.org/wiki/Cross_entropy&quot;&gt;Cross Entropy loss&lt;/a&gt; used to optimize neural network classifiers is already minimizing the the difference between our target and predictive distributions (it’s basically another name for the negative log likelihood). For these reasons, we can keep our classification network’s loss mechanics exactly the same.&lt;/p&gt;
+
+&lt;p id=&quot;classification_pred&quot;&gt;&lt;strong&gt;Making Predictions and Quantifying Uncertainty:&lt;/strong&gt; Once we’ve trained a standard network for classification, it is simple to obtain an expectation-based prediction and uncertainty estimate for our model.&lt;/p&gt;
+
+&lt;p&gt;If we are performing MC Dropout, to get a final prediction &lt;script type=&quot;math/tex&quot;&gt;\mathbf{\hat{y}}_\ast&lt;/script&gt; , we can average the predicted softmax probabilities  over &lt;script type=&quot;math/tex&quot;&gt;T&lt;/script&gt; stochastic forward passes of the data &lt;script type=&quot;math/tex&quot;&gt;\mathbf{x}&lt;/script&gt; through our network &lt;script type=&quot;math/tex&quot;&gt;\mathbf{f}_{\theta}(\mathbf{x}; \mathbf{w}_t)&lt;/script&gt; by sampling random dropout mask &lt;script type=&quot;math/tex&quot;&gt;\mathbf{w}_t&lt;/script&gt; for each pass:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathbf{\hat{y}}_t = \mathit{Softmax}(\mathbf{f}_{\theta}(\mathbf{x}; \mathbf{w}_t))&lt;/script&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathbf{\hat{y}}_\ast = \frac{1}{T} \sum_{t}{\mathbf{\hat{y}}_t}&lt;/script&gt;
+
+&lt;p&gt;If we’re using Model Ensembling, rather than performing &lt;script type=&quot;math/tex&quot;&gt;T&lt;/script&gt; forward passes through a single network with randomly sampled &lt;script type=&quot;math/tex&quot;&gt;\mathbf{w}_t&lt;/script&gt; dropout masks, we instead get our predictions from &lt;script type=&quot;math/tex&quot;&gt;M&lt;/script&gt; trained models whose parameters &lt;script type=&quot;math/tex&quot;&gt;\mathbf{\theta}_m&lt;/script&gt; are initialized to random starting points. Everything else stays the same.&lt;/p&gt;
+
+&lt;p&gt;We measure the uncertainty of our probabilistic prediction &lt;script type=&quot;math/tex&quot;&gt;\mathbf{\hat{y}_\ast}&lt;/script&gt; by computing its Entropy over its vector elements &lt;script type=&quot;math/tex&quot;&gt;\hat{y}_{\ast,c}&lt;/script&gt; :&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;H(\mathbf{\hat{y}_\ast}) = - \sum_c^C \hat{y}_{*,i} * {\log{\hat{y}_{\ast,c}}}&lt;/script&gt;
+
+&lt;h4 id=&quot;sample-code&quot;&gt;Sample code&lt;/h4&gt;
+
+&lt;p&gt;Let’s look at some &lt;a href=&quot;https://www.tensorflow.org/&quot;&gt;Tensorflow 2.0&lt;/a&gt; code to implement MC Dropout for a regression task.&lt;/p&gt;
+
+&lt;p&gt;We’ll first define our model below:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;tensorflow.keras.layers&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Dense&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Dropout&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;tensorflow.keras&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Sequential&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;model&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Sequential&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;([&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;Dense&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;activation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'relu'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;Dropout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;Dense&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;activation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'relu'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;Dropout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;Dense&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;activation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Notice, that rather than outputting a single unit, we’re outputing 2 units at the end of the network for the parameters of our estimated Gaussian distribution &lt;script type=&quot;math/tex&quot;&gt;\hat{\mu}&lt;/script&gt; and &lt;script type=&quot;math/tex&quot;&gt;\hat{\sigma}^2&lt;/script&gt;.&lt;/p&gt;
+
+&lt;p&gt;We’ll now define the loss for the regression task based on the equations above:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;gaussian_nll&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y_hat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;mu_hat&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y_hat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[:,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;var_hat&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y_hat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[:,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;.5&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;var_hat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;.5&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;pow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mu_hat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;var_hat&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;model&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;compile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loss&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gaussian_nll&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;optimizer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'sgd'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Finally, we’ll define our prediction function that will provide us with both an uncertainty estimate and a expecation-based prediction from our model.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;numpy&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;predict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;model&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;'''
+    Args:
+        model: The trained keras model
+        x: the input tensor with shape [N, M]
+        T: the number of monte carlo trials to sample
+    Returns:
+        y_star: The expected value of our prediction
+        var_star: The variance of our prediction
+    '''&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;mu_hats&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;var_hats&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;range&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;y_hat&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;model&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;train&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;True&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;mu_hats&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;y_hat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[:,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;var_hats&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;y_hat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[:,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+
+    &lt;span class=&quot;n&quot;&gt;mu_hats&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mu_hats&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;var_hats&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;var_hats&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+    &lt;span class=&quot;n&quot;&gt;y_star&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mu_hats&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mean&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;axis&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;var_star&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;var_hats&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mu_hats&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mean&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;axis&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y_star&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y_star&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;var_star&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I know it might seem odd that we’re setting &lt;code class=&quot;highlighter-rouge&quot;&gt;train=True&lt;/code&gt; when using the model to predict, but this is how the Keras framework determines that it needs to sample a random dropout mask when making a forward pass.&lt;/p&gt;
+
+&lt;p&gt;Let’s use our function now:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;n&quot;&gt;y_star&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;var_star&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;predict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;model&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Here, &lt;code class=&quot;highlighter-rouge&quot;&gt;y_star&lt;/code&gt; is the expected value of our estimated distribution and &lt;code class=&quot;highlighter-rouge&quot;&gt;var_star&lt;/code&gt; is its variance and can be used for our uncertainty estimate.&lt;/p&gt;
+
+&lt;!-- ![comparison](https://media.springernature.com/full/springer-static/image/art%3A10.1038%2Fs41598-017-17876-z/MediaObjects/41598_2017_17876_Fig4_HTML.jpg?as=webp) --&gt;
+
+&lt;h3 id=&quot;evaluation&quot;&gt;How good are these uncertainty estimates?&lt;/h3&gt;
+
+&lt;p&gt;We can review the experiments in &lt;a href=&quot;https://arxiv.org/abs/1912.10481v1&quot;&gt;A Systematic Comparison of Bayesian Deep Learning Robustness in Diabetic Retinopathy Tasks&lt;/a&gt; to get a sense of how well the proposed uncertainty estimates capture the concept of uncertainty.&lt;/p&gt;
+
+&lt;p&gt;In this paper, the authors train a image classifier to predict whether a patient suffers from &lt;a href=&quot;https://en.wikipedia.org/wiki/Diabetic_retinopathy&quot;&gt;Diabetic Retinopathy&lt;/a&gt; based on pictures of the patient’s cornea. They train models using both techniques discussed in this blog post (in addition to a few other techniques used for estimating uncertainty).&lt;/p&gt;
+
+&lt;p&gt;To test whether their uncertainty estimates meaningfully capture uncertainty, they propose a simple evaluation protocol:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Refer a fixed percentage of the test dataset to a expert human oracle by sweeping a threshold over the uncertainty estimates provided by their models.&lt;/li&gt;
+  &lt;li&gt;Report their model’s accuracy on the remaining &lt;em&gt;retained&lt;/em&gt; data split (i.e. the samples that were not referred).&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;The idea behind this protocol is that an &lt;em&gt;accurate&lt;/em&gt; measure of uncertainty would prioritize referring out the examples with high uncertainty, and as a result, the retained data would theoretically only contain examples that the model can predict with higher accuracy.&lt;/p&gt;
+
+&lt;p&gt;Here are the results of running this protocol on the Diabetic Retinopathy dataset:&lt;/p&gt;
+
+&lt;figure class=&quot;fig&quot;&gt;
+    &lt;img src=&quot;/media/3017/evaluation.jpg&quot; width=&quot;100%&quot; /&gt;
+    &lt;figcaption&gt;
+    Plot of model accuracy on test data as the model refers less samples (based on the model's estimate of uncertainty) to a human oracle. For meaningful measures of uncertainty, we see accuracy increase as we decrease amount of retained data. Left: test images comes from the same machine type used for training data. Right: test images come from a different machine type than the one used for training data.
+    &lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;In the plot above, the authors evaluate their ability to estimate uncertainty both when the test data comes from the same distribution as the training data &lt;em&gt;and&lt;/em&gt; when the test data comes from a different distribution.&lt;/p&gt;
+
+&lt;p&gt;As a sanity check we can look at the “Random Referal” baseline. Here, samples are chosen for referal at random regardless of their estimated uncertainty. As expected, randomly choosing samples neither increases nor decreases accuracy as we refer more samples to the human oracle. In contrast, both the MC Dropout and Model Ensembling methods increase accuracy as they refer more examples meaning their measures of uncertainty are finding examples that they are likely to get wrong when making a prediction.&lt;/p&gt;
+
+&lt;p&gt;The “Deterministic” baseline uses a single neural network to make point-estimate predictions and computes its estimate of uncertainty using entropy. In other words, it’s the conventional neural network that everyone is use to working with. It does much worse than MC Dropout and Model Ensembling for both in-distribution and out-of-distribution test sets. Interestingly for out-of-distribution data, using its uncertainty estimates is &lt;em&gt;no better than random referral&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;These experiments make a strong case for implementing either MC Dropout or Model ensembling to obtain more accurate uncertainty estimates. If you have the computational budget, combining both approaches (i.e. “Ensemble MC Dropout”) could yield the best results.&lt;/p&gt;
+
+&lt;h3 id=&quot;moving-beyond-traditional-leaderboard-metrics&quot;&gt;Moving beyond traditional leaderboard metrics&lt;/h3&gt;
+
+&lt;p&gt;I wrote this article because in a world driven by leaderboard AUC and AP metrics, it was worth pointing out that there are other measures, specifically the quality of your model’s uncertainty estimates, that matter for production environments.&lt;/p&gt;
+
+&lt;p&gt;We have to know when to trust our models as much as we have to find models with the highest possible accuracy. Uncertainty quantification gives us this ability and it gives us more flexibility for deciding what to do with our model predictions.&lt;/p&gt;
+
+&lt;p&gt;While the article only scratches the surface of the field, hopefully you now have some basic tools to quantify uncertainty and you understand why uncertainty is so critical for developing trustworthy models.&lt;/p&gt;
+
+&lt;h3 id=&quot;references&quot;&gt;References&lt;/h3&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;https://arxiv.org/abs/1612.01474&quot;&gt;Simple and Scalable Predictive Uncertainty Estimation using Deep Ensembles&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://proceedings.mlr.press/v48/gal16.pdf&quot;&gt;Dropout as a Bayesian Approximation: Representing Model Uncertainty in Deep Learning&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://arxiv.org/abs/1412.1897&quot;&gt;Deep Neural Networks are Easily Fooled: High Confidence Predictions for Unrecognizable Images&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://arxiv.org/abs/1703.04977&quot;&gt;What Uncertainties Do We Need in Bayesian Deep Learning for Computer Vision?&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://arxiv.org/abs/1606.06565&quot;&gt;Concrete Problems in AI Safety&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://arxiv.org/abs/1912.10481v1&quot;&gt;A Systematic Comparison of Bayesian Deep Learning Robustness in Diabetic Retinopathy Tasks&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://arxiv.org/abs/1906.02530&quot;&gt;Can You Trust Your Model’s Uncertainty? Evaluating Predictive Uncertainty Under Dataset Shift&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://arxiv.org/abs/1706.04599&quot;&gt;On Calibration of Modern Neural Networks&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.cs.toronto.edu/~hinton/absps/JMLRdropout.pdf&quot;&gt;Dropout: A Simple Way to Prevent Neural Networks from Overfitting&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.cs.ox.ac.uk/people/yarin.gal/website/thesis/1_introduction.pdf#page=7&quot;&gt;Yarin Gal’s Thesis - The Importance of Knowing What We Don’t Know&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.cs.ox.ac.uk/people/angelos.filos/publications/diabetic_retinopathy_diagnosis.pdf&quot;&gt;Benchmarking Bayesian Deep Learning with Diabetic Retinopathy Diagnosis&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.nature.com/articles/nature21056&quot;&gt;Dermatologist-level classification of skin cancer with deep neural networks&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://arxiv.org/pdf/1802.09127.pdf&quot;&gt;Deep Bayesian Bandits Showdown&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.cs.princeton.edu/courses/archive/spring08/cos424/scribe_notes/0214.pdf&quot;&gt;Princeton COS424: Maximum Likelihood Estimation&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.ntsb.gov/news/events/Pages/2019-HWY18MH010-BMG.aspx&quot;&gt;Collision Between Vehicle Controlled by Developmental Automated Driving System and Pedestrian&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.ntsb.gov/news/events/Pages/2019-HWY18MH010-BMG.aspx&quot;&gt;Fukushima: The Failure of Predictive Models&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.wired.com/story/when-it-comes-to-gorillas-google-photos-remains-blind/&quot;&gt;When It Comes to Gorillas, Google Photos Remains Blind&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+</content>
+
+ </entry>
  
  <entry>
    <title>Similarity search 101 - Part 2 (Fast retrieval with vp-trees)</title>
@@ -94,19 +424,19 @@
 
 &lt;p&gt;There are three scenarios for how this query-tau area can relate to any node within our vantage point tree.&lt;/p&gt;
 
-&lt;h5 id=&quot;pruning-the-left-child-node&quot;&gt;Pruning the left child node&lt;/h5&gt;
+&lt;h4 id=&quot;pruning-the-left-child-node&quot;&gt;Pruning the left child node&lt;/h4&gt;
 
 &lt;p&gt;The first scenario is if the area lies &lt;em&gt;completely&lt;/em&gt; outside of our vantage-point-mu radius as depicted below. If this is the case, we can safely assume that if we are to find &lt;script type=&quot;math/tex&quot;&gt;q&lt;/script&gt;’s nearest neighbors we can forego looking in our node’s left child, which contains all elements within the mu radius of this vantage point.&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/media/3016/disjoint_vp_q.png&quot; alt=&quot;query-tau and vp-mu areas are disjoint&quot; /&gt;&lt;/p&gt;
 
-&lt;h5 id=&quot;pruning-the-right-child-node&quot;&gt;Pruning the right child node&lt;/h5&gt;
+&lt;h4 id=&quot;pruning-the-right-child-node&quot;&gt;Pruning the right child node&lt;/h4&gt;
 
 &lt;p&gt;The next scenario is when the query-tau area lies &lt;em&gt;completely&lt;/em&gt; inside the bounds of the vantage point’s mu-radius (see below). In this case, we can ignore all points outside of &lt;script type=&quot;math/tex&quot;&gt;mu&lt;/script&gt; which we had conveniently assigned to the right child node.&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/media/3016/union_vp_q.png&quot; alt=&quot;query-tau and vp-mu areas are disjoint&quot; /&gt;&lt;/p&gt;
 
-&lt;h5 id=&quot;worst-case-we-check-both-left-and-right-child-nodes&quot;&gt;Worst case, we check both left and right child nodes&lt;/h5&gt;
+&lt;h4 id=&quot;worst-case-we-check-both-left-and-right-child-nodes&quot;&gt;Worst case, we check both left and right child nodes&lt;/h4&gt;
 
 &lt;p&gt;What happens when the query-tau area partially intersects with our node’s vantage point’s mu-radius?&lt;/p&gt;
 
@@ -114,7 +444,7 @@
 
 &lt;p&gt;In this scenario, we can’t say whether the right or left child contains the nearest neighbors, so we have to search both nodes.&lt;/p&gt;
 
-&lt;h5 id=&quot;traversing-the-tree-to-find-nearest-neighbors&quot;&gt;Traversing the tree to find nearest neighbors&lt;/h5&gt;
+&lt;h4 id=&quot;traversing-the-tree-to-find-nearest-neighbors&quot;&gt;Traversing the tree to find nearest neighbors&lt;/h4&gt;
 
 &lt;p&gt;To summarize, when the query threshold area is &lt;em&gt;completely&lt;/em&gt; outside the bounds of our node’s vantage-point mu boundary, we can exclude or “prune” the left child node from our search space. When the query threshold is &lt;em&gt;completely&lt;/em&gt; inside the bounds of vantage-point mu boundary, we cans safely ignore the right child node. And finally when neither is the case, we must search both left and right child nodes.&lt;/p&gt;
 
@@ -167,7 +497,7 @@
 
 &lt;p&gt;Here is the full source code for my &lt;a href=&quot;https://github.com/huyng/algorithms/tree/master/vptree&quot;&gt;python implementation of a vantage point tree&lt;/a&gt;.&lt;/p&gt;
 
-&lt;h5 id=&quot;references&quot;&gt;references&lt;/h5&gt;
+&lt;h4 id=&quot;references&quot;&gt;references&lt;/h4&gt;
 
 &lt;ul&gt;
   &lt;li&gt;
@@ -258,7 +588,7 @@ OpenBlas, numpy’s &lt;code class=&quot;highlighter-rouge&quot;&gt;dot&lt;/code
 
 &lt;p&gt;The code, in a nutshell, is a wrapper around blas’s generalized matrix-matrix multiplication routines (A.K.A “gemm”). Its main job is to ensure that the arrays that get passed into it are in FORTRAN contiguous order before handing-off the bulk of the work to the underlying blas routines.&lt;/p&gt;
 
-&lt;h6 id=&quot;performance-comparison-between-dot-product-implementations&quot;&gt;Performance comparison between dot product implementations&lt;/h6&gt;
+&lt;h3 id=&quot;performance-comparison-between-dot-product-implementations&quot;&gt;Performance comparison between dot product implementations&lt;/h3&gt;
 
 &lt;p&gt;I ran a few benchmarks and plotted below the speed differences between &lt;code class=&quot;highlighter-rouge&quot;&gt;fastdot.dot&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;np.dot&lt;/code&gt; operating on matrices of varying dimensions and sizes.&lt;/p&gt;
 
@@ -293,7 +623,7 @@ OpenBlas, numpy’s &lt;code class=&quot;highlighter-rouge&quot;&gt;dot&lt;/code
    <category term="python" />
    
 
-   <content type="html">&lt;p&gt;I’m inventing a new data format (as blasphemous as it sounds). 
+   <content type="html">&lt;p&gt;I’m inventing a new data format (as blasphemous as it sounds).
 It’s flexible, human readable, easy to produce, and best of
  all, nearly impossible to screw up parsing.&lt;/p&gt;
 
@@ -302,7 +632,7 @@ worry about quoting, escaping, or deciding whether your “comma” sepearated
 values turn out to really mean semicolon or even worse, tab delimited.&lt;/p&gt;
 
 &lt;p&gt;The new data format is called &lt;strong&gt;json streaming record&lt;/strong&gt; or &lt;strong&gt;JSRec&lt;/strong&gt; for short.
-While I say it’s “new”, I’m sure many of you have either produced or 
+While I say it’s “new”, I’m sure many of you have either produced or
 consumed this type of data already at some point in your career.&lt;/p&gt;
 
 &lt;p&gt;Here’s how it’s defined:&lt;/p&gt;
@@ -345,7 +675,7 @@ consumed this type of data already at some point in your career.&lt;/p&gt;
         &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rec&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;records&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
             &lt;span class=&quot;n&quot;&gt;fh&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;json&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dumps&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;h5 id=&quot;a-new-use-case-building-data-processing-pipelines-with-jsrec&quot;&gt;A new use case: building data processing pipelines with JSRec&lt;/h5&gt;
+&lt;h3 id=&quot;a-new-use-case-building-data-processing-pipelines-with-jsrec&quot;&gt;A new use case: building data processing pipelines with JSRec&lt;/h3&gt;
 
 &lt;p&gt;Because each line in a JSRec file contains all the information necessary
 to parse a record, you can use it to pipe output from one program to another:&lt;/p&gt;
@@ -357,15 +687,15 @@ to parse a record, you can use it to pipe output from one program to another:&lt
 them together. This is HUGE because it makes building data processing pipelines
 on the commandline a modular and simple task.&lt;/p&gt;
 
-&lt;h5 id=&quot;when-to-use-it&quot;&gt;When to use it&lt;/h5&gt;
+&lt;h3 id=&quot;when-to-use-it&quot;&gt;When to use it&lt;/h3&gt;
 
 &lt;p&gt;Json Streaming Record is an ideal replacement for CSV files. Use it when you want a
 data format that can store “streams” of records that are human readable yet easily
 parsed by a machine.&lt;/p&gt;
 
 &lt;p&gt;With each line of the format being a completely self-contained JSON object, JSRec
-allows you to produce and consume data in an incremental fashion. I encourage you to start 
-using it as a data format to pass around on the commandline for when you’re 
+allows you to produce and consume data in an incremental fashion. I encourage you to start
+using it as a data format to pass around on the commandline for when you’re
 building those data processing pipelines.&lt;/p&gt;
 
 </content>
@@ -383,7 +713,26 @@ building those data processing pipelines.&lt;/p&gt;
    <category term="python" />
    
 
-   <content type="html">&lt;p&gt;While it’s not always the case that every Python program you write will require a rigorous performance analysis, it is reassuring to know that there are a wide variety of tools in Python’s ecosystem that one can turn to when the time arises.&lt;/p&gt;
+   <content type="html">&lt;ul id=&quot;markdown-toc&quot;&gt;
+  &lt;li&gt;&lt;a href=&quot;#introduction&quot; id=&quot;markdown-toc-introduction&quot;&gt;Introduction&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#coarse-grain-timing-with-time&quot; id=&quot;markdown-toc-coarse-grain-timing-with-time&quot;&gt;Coarse grain timing with time&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#fine-grain-timing-with-a-timing-context-manager&quot; id=&quot;markdown-toc-fine-grain-timing-with-a-timing-context-manager&quot;&gt;Fine grain timing with a timing context manager&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#line-by-line-timing-and-execution-frequency-with-a-profiler&quot; id=&quot;markdown-toc-line-by-line-timing-and-execution-frequency-with-a-profiler&quot;&gt;Line-by-line timing and execution frequency with a profiler&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#how-much-memory-does-it-use&quot; id=&quot;markdown-toc-how-much-memory-does-it-use&quot;&gt;How much memory does it use?&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#ipython-shortcuts-for-line_profiler-and-memory_profiler&quot; id=&quot;markdown-toc-ipython-shortcuts-for-line_profiler-and-memory_profiler&quot;&gt;IPython shortcuts for line_profiler and memory_profiler&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#wheres-the-memory-leak&quot; id=&quot;markdown-toc-wheres-the-memory-leak&quot;&gt;Where’s the memory leak?&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#which-objects-are-the-most-common&quot; id=&quot;markdown-toc-which-objects-are-the-most-common&quot;&gt;Which objects are the most common?&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#which-objects-have-been-added-or-deleted&quot; id=&quot;markdown-toc-which-objects-have-been-added-or-deleted&quot;&gt;Which objects have been added or deleted?&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#what-is-referencing-this-leaky-object&quot; id=&quot;markdown-toc-what-is-referencing-this-leaky-object&quot;&gt;What is referencing this leaky object?&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#effort-vs-precision&quot; id=&quot;markdown-toc-effort-vs-precision&quot;&gt;Effort vs precision&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#refrences&quot; id=&quot;markdown-toc-refrences&quot;&gt;Refrences&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;introduction&quot;&gt;Introduction&lt;/h3&gt;
+
+&lt;p&gt;While it’s not always the case that every Python program you write will require a rigorous performance analysis, it is reassuring to know that there are a wide variety of tools in Python’s ecosystem that one can turn to when the time arises.&lt;/p&gt;
 
 &lt;p&gt;Analyzing a program’s performance boils down to answering 4 basic questions:&lt;/p&gt;
 
@@ -475,25 +824,26 @@ sys     0m0.003s&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;profile&lt;/span&gt;
 &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;primes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;==&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
         &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;elif&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;elif&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
         &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;range&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;range&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
     &lt;span class=&quot;n&quot;&gt;mroot&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.5&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;half&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;half&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;m&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;
     &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;m&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mroot&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
         &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]:&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;half&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;m&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;half&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;m&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+
 &lt;span class=&quot;n&quot;&gt;primes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;Once you’ve gotten your code setup with the &lt;code class=&quot;highlighter-rouge&quot;&gt;@profile&lt;/code&gt; decorator, use &lt;code class=&quot;highlighter-rouge&quot;&gt;kernprof.py&lt;/code&gt; to run your script.&lt;/p&gt;
@@ -692,7 +1042,7 @@ tuple                16969        +1
 
 &lt;p&gt;As with many other topics, running a performance analysis means balancing the tradeoffs between effort and precision. When in doubt, implement the simplest solution that will suit your current needs.&lt;/p&gt;
 
-&lt;h5 id=&quot;refrences&quot;&gt;Refrences&lt;/h5&gt;
+&lt;h3 id=&quot;refrences&quot;&gt;Refrences&lt;/h3&gt;
 
 &lt;ul&gt;
   &lt;li&gt;&lt;a href=&quot;http://stackoverflow.com/questions/556405/what-do-real-user-and-sys-mean-in-the-output-of-time1&quot;&gt;stack overflow - time explained&lt;/a&gt;&lt;/li&gt;
@@ -718,7 +1068,7 @@ to help you create and manage persistent terminal workspaces so that with a
 few keystrokes, you can jump straight back into whatever you were working on
 as quickly as possible.&lt;/p&gt;
 
-&lt;h5 id=&quot;how-it-works&quot;&gt;How it works&lt;/h5&gt;
+&lt;h3 id=&quot;how-it-works&quot;&gt;How it works&lt;/h3&gt;
 
 &lt;p&gt;The whole idea behind this setup is to make it so you will have 1) The ability to name your
 terminal workspaces with easily memorizable names and 2) the  ability to keep persistent terminal workspaces running
@@ -760,7 +1110,7 @@ tmux has-session &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; _default &lt;s
     &lt;span class=&quot;k&quot;&gt;esac&lt;/span&gt;
 &lt;span class=&quot;k&quot;&gt;done&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;h5 id=&quot;setting-it-up&quot;&gt;Setting it up&lt;/h5&gt;
+&lt;h3 id=&quot;setting-it-up&quot;&gt;Setting it up&lt;/h3&gt;
 
 &lt;p&gt;First off, place the above script in a location that’s accessible to &lt;a href=&quot;http://www.iterm2.com/&quot;&gt;iTerm2&lt;/a&gt; (I usually place it in ~/.dotfiles/tmux.start.sh).&lt;/p&gt;
 
@@ -768,7 +1118,7 @@ tmux has-session &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; _default &lt;s
 
 &lt;p&gt;&lt;img src=&quot;/media/3012/iterm2config.jpg&quot; alt=&quot;iterm2config&quot; /&gt;&lt;/p&gt;
 
-&lt;h5 id=&quot;usage&quot;&gt;Usage&lt;/h5&gt;
+&lt;h3 id=&quot;usage&quot;&gt;Usage&lt;/h3&gt;
 
 &lt;p&gt;Once you’ve done all the above, everytime you open a new window, you’ll be prompted to choose which previous
 workspace you want to join.&lt;/p&gt;

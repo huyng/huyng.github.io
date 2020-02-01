@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Why Uncertainty Matters in Deep Learning and How to Estimate It &laquo; Searching Gradients with Huy</title>
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" href="/atom.xml" />
+    <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/monokai.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css">
+    <!-- <link href="https://fonts.googleapis.com/css?family=Lora&display=swap" rel="stylesheet"> -->
+    <link href="https://fonts.googleapis.com/css?family=Lora:400,700|Rock+Salt&display=swap" rel="stylesheet">
+
+    <!-- fonts -->
+    <link href="//netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
+
+    <!-- javascript -->
+    <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-140409395-3"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-140409395-3');
+    </script>
+</head>
+
+<body>
+    <div class="container">
+
+
+        <br>
+        <div class="site-title"><a href="/">Searching Gradients</a></div>
+        <br>
+        <div id="nav-container">
+            <ul class="nav" style="width:100%;">
+                <li><a href="/">
+                        <!-- <span style="color:#444"><i class="icon-align-justify icon-medium"></i></span> -->
+                        posts</a></li>
+                <li><a href="https://everyhue.me/">
+                        <!-- <span style="color:#444"><i class="icon-gamepad icon-medium"></i></span> -->
+                        about</a></li>
+                <li class="social-media-nav">
+                    <a id="twitter" href="http://twitter.com/huyng">
+                        <!-- <span style="color:#444"><i class="icon-twitter icon-medium"></i></span> -->
+                        twitter
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="github" href="https://github.com/huyng">
+                        <!-- <span style="color:#444"><i class="icon-github icon-medium"></i></span> -->
+                        github
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="rss" href="/atom.xml">
+                        <!-- <span style="color:#444"><i class="icon-rss-sign icon-medium"></i></span> -->
+                       rss
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <br>
+    <hr>
+    <div class="container">
+        
+
+        <div id="content-container">
+            <!-- POST -->
+
+
+<!-- <div class="header-rule"></div> -->
+<div class="post content">
+    
+    <!-- https://css-tricks.com/full-width-containers-limited-width-parents/ -->
+    <!-- <div style='margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw);'> -->
+    <div>
+        <img src="/media/3017/marquee.jpg" class="marquee-image">
+    </div>
+    
+    <div class="post-date">
+        20 Jan 2020 &nbsp; &ndash; &nbsp; <a style="color:#888" href="https://everyhue.me">Huy Nguyen</a>
+    </div>
+    <br>
+    <h2 class="post-title"><a href="/posts/why-uncertainty-matters/">Why Uncertainty Matters in Deep Learning and How to Estimate It</a></h2>
+    <div class="post-content">
+    <ul id="markdown-toc">
+  <li><a href="#more-trustworthy-models" id="markdown-toc-more-trustworthy-models">More trustworthy models</a></li>
+  <li><a href="#uncertainty-estimates-what-are-they-good-for" id="markdown-toc-uncertainty-estimates-what-are-they-good-for">Uncertainty estimates, what are they good for?</a></li>
+  <li><a href="#where-does-uncertainty-come-from" id="markdown-toc-where-does-uncertainty-come-from">Where does uncertainty come from?</a></li>
+  <li><a href="#how-to-estimate-uncertainty-overview" id="markdown-toc-how-to-estimate-uncertainty-overview">How to estimate uncertainty (overview)</a>    <ul>
+      <li><a href="#monte-carlo-dropout" id="markdown-toc-monte-carlo-dropout">Monte Carlo Dropout</a></li>
+      <li><a href="#deep-ensembles" id="markdown-toc-deep-ensembles">Deep Ensembles</a></li>
+      <li><a href="#regression" id="markdown-toc-regression">Estimating uncertainty for regression</a></li>
+      <li><a href="#classification" id="markdown-toc-classification">Estimating uncertainty for classification</a></li>
+      <li><a href="#sample-code" id="markdown-toc-sample-code">Sample code</a></li>
+    </ul>
+  </li>
+  <li><a href="#evaluation" id="markdown-toc-evaluation">How good are these uncertainty estimates?</a></li>
+  <li><a href="#moving-beyond-traditional-leaderboard-metrics" id="markdown-toc-moving-beyond-traditional-leaderboard-metrics">Moving beyond traditional leaderboard metrics</a></li>
+  <li><a href="#references" id="markdown-toc-references">References</a></li>
+</ul>
+
+<h3 id="more-trustworthy-models">More trustworthy models</h3>
+
+<p>For <a href="https://arxiv.org/abs/1606.06565">safety</a> critical systems and infrastructure, you need to know when to trust a model’s prediction and when you should be more cautious about its output.</p>
+
+<p>Suppose you train a model to detect pedestrians, but you only have access to <em>day time</em> video feeds as training data due to data constraints. You would expect this model to fail miserably at <em>night</em> since the videos would look nothing like the data the model was trained on. From your perspective this problem is easy to see, but would your model know that it’s operating in a completely new environment? Or would it just go about predicting everything at night as “no pedestrian”?</p>
+
+<p>How would you know when to trust your model?</p>
+
+<p>The problem with conventional deep neural networks is that they only provide <a href="https://en.wikipedia.org/wiki/Point_estimation">point-estimates</a> which are single predictive values given some input data. What you don’t get with these models is a measure of how uncertain they are for any given prediction.</p>
+
+<!-- For classification, these predictions take the form of a single class label (and a softmax score), and in the case of regression, a single output number. -->
+
+<p>While the softmax “probability” of a neural network classifier is commonly interpreted and used as a heuristic for uncertainty, scientists have shown that this measure often <a href="https://arxiv.org/abs/1412.1897">overestimates its confidence</a>, even on examples that are unrecognizable when compared to a model’s training set.</p>
+
+<p>What you really need is an <em>accurate</em> measure of uncertainty.</p>
+
+<p>An <em>accurate</em> measure of uncertainty lets your model say “I don’t know” when it encounters a distribution of data that it wasn’t trained with or when it evaluates an example that can be interpreted in multiple ways.</p>
+
+<!-- If you had access to such a measure, you'd be able to take different and more [useful](#what_you_can_do) actions based upon how confident the model was of its prediction. -->
+
+<h3 id="uncertainty-estimates-what-are-they-good-for">Uncertainty estimates, what are they good for?</h3>
+
+<p>A <em>good</em> uncertainty estimate gives you more flexibility. You don’t have to always assign the same amount of trust to every model prediction, and likewise, you don’t always have to take the same action based upon those predictions.</p>
+
+<p>For example, when uncertainty is high you can decide to:</p>
+
+<ul>
+  <li>Refrain from taking any action on the prediction at all.</li>
+  <li>Refer the particular piece of data to a human to make a final call.</li>
+  <li>Collect more examples that cause high uncertainty to retrain your model.</li>
+  <li>Implement a tiered prediction strategy by sending the data to a slower, but more accurate model, when uncertainty is high.</li>
+</ul>
+
+<p>Blindly assigning the same amount of trust and action for every model prediction can lead to <a href="https://www.wired.com/story/when-it-comes-to-gorillas-google-photos-remains-blind/">embarrassing</a>, <a href="https://mpra.ub.uni-muenchen.de/69383/1/MPRA_paper_69383.pdf">serious</a>, or even <a href="https://www.ntsb.gov/news/events/Pages/2019-HWY18MH010-BMG.aspx">fatal</a> mistakes in your autonomous systems.</p>
+
+<h3 id="where-does-uncertainty-come-from">Where does uncertainty come from?</h3>
+
+<p>We have to understand where uncertainty comes from to know how we can account for it in our models. Let’s look at two major sources of uncertainty in predictive modeling below.</p>
+
+<p><strong>Aleatoric uncertainty</strong> is uncertainty arising from noisy data. The noise can come from observation noise or it can come from the underlying process itself. High Aleatoric uncertainty indicate that small changes in the input data lead to large variances in the target data.</p>
+
+<!-- ![image](https://user-images.githubusercontent.com/121183/73386945-95872600-4284-11ea-89f1-3cfc6f377715.png) -->
+
+<figure style="float:left; width: 45%; margin-right:1em;" class="fig">
+    <img src="/media/3017/aleatoric_uncertainty_obs.png" height="200" />
+    <figcaption>
+    Noisy measurements of an underlying process leading to high Aleatoric uncertainty.
+    </figcaption>
+</figure>
+<figure style="float:left; width:45%;" class="fig">
+    <img src="/media/3017/aleatoric_uncertainty_prc.png" height="200" />
+    <figcaption>
+    Even with error-less observations, a noisy underlying process can give rise to high Aleatoric uncertainty.
+    </figcaption>
+</figure>
+
+<p><strong>Epistemic uncertainty</strong> is uncertainty arising from a noisy model. Given the same input, high epistemic uncertainty indicate that small changes in model parameters give rise to large changes in model predictions. This type of uncertainty commonly occurs when models are evaluated on data whose distribution is different from the training data.</p>
+
+<figure class="fig">
+    <img src="/media/3017/epistemic_uncertainty.png" width="100%" />
+    <figcaption>
+    Epistemic uncertainty can arise in regions of the data space where there are few observations for training. This is because when there is little training data, many plausible model parameters may suffice for explaining the underlying ground truth phenomenon.
+    </figcaption>
+</figure>
+
+<!-- When deploying models into real-world use cases, it is not uncommon for your model to encounter data that comes from a distribution that is drastically different than the one that it was trained on. Or alternatively, your data distribution may shift over time.
+
+For example, let's say you trained a *dogs* vs. *cats* image classifier using a conventional convolutional neural network. Without uncertainty, you would be unable to determine that a photo of a *car* belonged to neither of these classes. In effect, your model would be forced to make a prediction of either *cat* or *dog* instead of being able to predict "I don't know" when encountering new data. -->
+
+<!-- While the above example covers a benign situation, the shortcomings of a model without uncertainty estimates  extends to more serious situations, such as in medical tasks like [detecting diabetic retinopathy detection][diabetic] using images of retinas. -->
+
+<!-- For further info, see  [section 1.2][yaringal_intro] of Yarin Gal's Thesis on Bayesian Learning. -->
+
+<!-- ![uncertainty](https://media.springernature.com/full/springer-static/image/art%3A10.1038%2Fs41598-017-17876-z/MediaObjects/41598_2017_17876_Fig5_HTML.jpg?as=webp) -->
+
+<h3 id="how-to-estimate-uncertainty-overview">How to estimate uncertainty (overview)</h3>
+
+<p><a href="http://proceedings.mlr.press/v48/gal16.pdf">Monte Carlo Dropout</a> and <a href="https://arxiv.org/abs/1612.01474">Model Ensembling</a> are popular methods for estimating uncertainty in deep learning. These methods try to account for both aleatoric and epistemic uncertainty.</p>
+
+<p>Although the authors behind these methods give different motivations for their work, both approach the problem of estimating uncertainty using a similar strategy:</p>
+
+<p>They first propose modifying your neural network to <em>estimate probability distributions</em> rather than point-estimates (we talk more on this for the tasks of <a href="#regression">regression</a> and <a href="#classification">classification</a> below). In doing so, we allow our models to capture Aleatoric Uncertainty during training.</p>
+
+<p>Second, they propose that at prediction time, you sample and combine predictions from multiple realizations of your neural network to get a final prediction and its uncertainty. This procedure helps our networks capture Epistemic uncertainty.</p>
+
+<h4 id="monte-carlo-dropout">Monte Carlo Dropout</h4>
+
+<p>The deep learning community often uses <a href="https://www.cs.toronto.edu/~hinton/absps/JMLRdropout.pdf">Dropout</a> to prevent models from overfitting. The idea is easy to implement: just randomly zero-out activations in your neural network with rate <script type="math/tex">p</script> at training time and scale your activations by <script type="math/tex">p</script> at test-time.</p>
+
+<p>It turns out Dropout with some modifications is also useful for estimating uncertainty as described by <a href="http://proceedings.mlr.press/v48/gal16.pdf">Gal and Ghahramani</a>. As long as your neural networks are trained with a few Dropout layers, you can use this method at prediction-time to obtain an estimate of uncertainty for your model.</p>
+
+<p>The approach works by combining the predictions of several “realizations” of your neural network, which are essentially multiple forward passes of the same data point <script type="math/tex">\mathbf{x}</script> through your network while applying different dropout masks <script type="math/tex">\mathbf{w}_t</script>.</p>
+
+<p>Unlike traditional Dropout networks, Monte Carlo Dropout (MC Dropout) networks applies dropout both at train-time and at test-time.</p>
+
+<p><strong>Algorithm:</strong></p>
+
+<ol>
+  <li>Train a neural network <script type="math/tex">f_\theta(\mathbf{x})</script> containing Dropout layers and a probabilistic loss appropriate for either your <a href="#regression">regression</a> or <a href="#classification">classification</a> task (see below) .</li>
+  <li>At test time, perform <script type="math/tex">T</script> stochastic forward passes through <script type="math/tex">f_\theta(\mathbf{x})</script> to obtain predictions for input <script type="math/tex">\mathbf{x}</script>.</li>
+  <li>Depending on whether you are doing <a href="#regression_pred">regression</a> or <a href="#classification_pred">classification</a>, “combine” predictions as described below to obtain an Expectation-based prediction and uncertainty estimate.</li>
+</ol>
+
+<h4 id="deep-ensembles">Deep Ensembles</h4>
+
+<p>Another way to estimate uncertainty is by using model ensembling as described in the paper <a href="https://arxiv.org/abs/1612.01474">Simple and Scalable Predictive Uncertainty Estimation using Deep Ensembles</a>.</p>
+
+<p>The approach is quite similar to MC Dropout, and in fact, one way to interpret MC Dropout is to view it as a form of model ensembling.</p>
+
+<p>The major difference with this approach is that rather than using a <em>single</em> trained network to make predictions with several randomly sampled dropout masks, we use <script type="math/tex">M</script> trained models initialized from random starting points to collect our Monte Carlo samples.</p>
+
+<h4 id="regression">Estimating uncertainty for regression</h4>
+
+<p><strong>Defining the Probabilistic Loss Function:</strong> When training models for the regression task, we usually minimize the error between some target values <script type="math/tex">y</script> and predicted values <script type="math/tex">\hat{y}</script> using the <a href="https://en.wikipedia.org/wiki/Mean_squared_error">Mean Squared Error</a> loss.</p>
+
+<p>To obtain uncertainty estimates with MC Dropout or Model Ensembling however, we must take a more probabalistic view. Rather than predicting a single scalar value <script type="math/tex">\hat{y}</script>, we assume our target data is normally distributed and predict a <a href="https://en.wikipedia.org/wiki/Normal_distribution">Gaussian distribution</a> <script type="math/tex">\mathcal{N}</script> parameterized with mean <script type="math/tex">\hat{\mu}</script> and variance <script type="math/tex">\hat{\sigma}^2</script>.</p>
+
+<p>\begin{equation}
+    \hat{\mu}, \hat{\sigma}^2 = f_\theta(\mathbf{x})
+\end{equation}</p>
+
+<p>\begin{equation}
+    p_{\theta}(y | \mathbf{x}) = \mathcal{N}(\hat{\mu}, \hat{\sigma}^2)
+\end{equation}</p>
+
+<p>For our loss, instead of minimizing the difference to the predicted and target variable, we minimize the difference of our predictive distribution to the target distribution using the <a href="https://www.cs.princeton.edu/courses/archive/spring08/cos424/scribe_notes/0214.pdf">Negative Log Likelihood</a> loss:</p>
+
+<p>\begin{equation}
+    - \log{p_{\theta}(y | \mathbf{x}}) = \frac{\log{\hat{\sigma}^2}}{2} + \frac{(y - \hat{\mu})^2}{2\hat{\sigma}^2}
+\end{equation}</p>
+
+<p>(As an aside, I find this loss quite facinating. Notice here, we’re never explicitly providing the network an “uncertainty label” or target <script type="math/tex">\sigma^2</script>. The network implicitly learns to capture the variance through the balance of the <script type="math/tex">\hat{\sigma}^2</script> terms in the numerator and denominator.)</p>
+
+<p id="regression_pred"><strong>Making Predictions and Quantifying Uncertainty:</strong> Once we’ve trained our model, if we’re performing Monte Carlo Dropout, we sample dropout masks <script type="math/tex">\mathbf{w_t}</script> and perform forward passes through <script type="math/tex">f_\theta(\mathbf{x; \mathbf{w_t}})</script> to obtain <script type="math/tex">T</script> samples:</p>
+
+<p>\begin{equation}
+    \hat{\mu}_{t}, \hat{\sigma}_{t}^2 =  f_\theta(\mathbf{x; \mathbf{w_t}})
+\end{equation}</p>
+
+<p>With these Monte Carlo samples <script type="math/tex">\hat{\mu}_{t}</script> , <script type="math/tex">\hat{\sigma}_{t}^2</script> in hand, we can now compute our final regression prediction <script type="math/tex">\hat{y}_{\ast}</script> and its uncertainty <script type="math/tex">\hat{\sigma}_{\ast}^{2}</script> :</p>
+
+<p>\begin{equation}
+    \hat{y}_{\ast} = \frac{1}{T}\sum_{t\in{T}}{\hat{\mu}_{t}}
+\end{equation}</p>
+
+<p>\begin{equation}
+    \hat{\sigma}_{\ast}^{2} = \frac{1}{T}\sum_{t\in{T}}{(\hat{\sigma}_{t}^2 + \hat{\mu}_{t}^2)} - \hat{y}_{\ast}^2
+\end{equation}</p>
+
+<p>If we’re using Model Ensembling, rather than performing <script type="math/tex">T</script> forward passes through a single network with randomly sampled <script type="math/tex">\mathbf{w}_t</script> dropout masks, we instead get our predictions from <script type="math/tex">M</script> trained models whose parameters <script type="math/tex">\mathbf{\theta}_m</script> are initialized to random starting points. Everything else remains the same.</p>
+
+<p>Note: These formulations were described in follow-on papers to the MC Dropout paper from <a href="https://arxiv.org/abs/1703.04977">Kendall and Gal</a> and <a href="https://arxiv.org/abs/1612.01474">Lakshminarayanan et. al</a>.</p>
+
+<h4 id="classification">Estimating uncertainty for classification</h4>
+
+<p><strong>Defining the Probabilistic Loss Function:</strong> The great news is that for classification, we do not need to modify the loss in order to obtain meaningful uncertainty estimates using Monte Carlo Dropout or Model Ensembling. This is because the predictions of a conventional neural network classifier uses the <a href="https://en.wikipedia.org/wiki/Softmax_function">Softmax</a> function which already parameterizes a discrete probability distribution.</p>
+
+<p>Likewise, the <a href="https://en.wikipedia.org/wiki/Cross_entropy">Cross Entropy loss</a> used to optimize neural network classifiers is already minimizing the the difference between our target and predictive distributions (it’s basically another name for the negative log likelihood). For these reasons, we can keep our classification network’s loss mechanics exactly the same.</p>
+
+<p id="classification_pred"><strong>Making Predictions and Quantifying Uncertainty:</strong> Once we’ve trained a standard network for classification, it is simple to obtain an expectation-based prediction and uncertainty estimate for our model.</p>
+
+<p>If we are performing MC Dropout, to get a final prediction <script type="math/tex">\mathbf{\hat{y}}_\ast</script> , we can average the predicted softmax probabilities  over <script type="math/tex">T</script> stochastic forward passes of the data <script type="math/tex">\mathbf{x}</script> through our network <script type="math/tex">\mathbf{f}_{\theta}(\mathbf{x}; \mathbf{w}_t)</script> by sampling random dropout mask <script type="math/tex">\mathbf{w}_t</script> for each pass:</p>
+
+<script type="math/tex; mode=display">\mathbf{\hat{y}}_t = \mathit{Softmax}(\mathbf{f}_{\theta}(\mathbf{x}; \mathbf{w}_t))</script>
+
+<script type="math/tex; mode=display">\mathbf{\hat{y}}_\ast = \frac{1}{T} \sum_{t}{\mathbf{\hat{y}}_t}</script>
+
+<p>If we’re using Model Ensembling, rather than performing <script type="math/tex">T</script> forward passes through a single network with randomly sampled <script type="math/tex">\mathbf{w}_t</script> dropout masks, we instead get our predictions from <script type="math/tex">M</script> trained models whose parameters <script type="math/tex">\mathbf{\theta}_m</script> are initialized to random starting points. Everything else stays the same.</p>
+
+<p>We measure the uncertainty of our probabilistic prediction <script type="math/tex">\mathbf{\hat{y}_\ast}</script> by computing its Entropy over its vector elements <script type="math/tex">\hat{y}_{\ast,c}</script> :</p>
+
+<script type="math/tex; mode=display">H(\mathbf{\hat{y}_\ast}) = - \sum_c^C \hat{y}_{*,i} * {\log{\hat{y}_{\ast,c}}}</script>
+
+<h4 id="sample-code">Sample code</h4>
+
+<p>Let’s look at some <a href="https://www.tensorflow.org/">Tensorflow 2.0</a> code to implement MC Dropout for a regression task.</p>
+
+<p>We’ll first define our model below:</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">from</span> <span class="nn">tensorflow.keras.layers</span> <span class="kn">import</span> <span class="n">Input</span><span class="p">,</span> <span class="n">Dense</span><span class="p">,</span> <span class="n">Dropout</span>
+<span class="kn">from</span> <span class="nn">tensorflow.keras</span> <span class="kn">import</span> <span class="n">Sequential</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">Sequential</span><span class="p">([</span>
+    <span class="n">Dense</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s">'relu'</span><span class="p">),</span>
+    <span class="n">Dropout</span><span class="p">(</span><span class="mf">.5</span><span class="p">),</span>
+    <span class="n">Dense</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s">'relu'</span><span class="p">),</span>
+    <span class="n">Dropout</span><span class="p">(</span><span class="mf">.5</span><span class="p">),</span>
+    <span class="n">Dense</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="bp">None</span><span class="p">),</span>
+<span class="p">])</span></code></pre></figure>
+
+<p>Notice, that rather than outputting a single unit, we’re outputing 2 units at the end of the network for the parameters of our estimated Gaussian distribution <script type="math/tex">\hat{\mu}</script> and <script type="math/tex">\hat{\sigma}^2</script>.</p>
+
+<p>We’ll now define the loss for the regression task based on the equations above:</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">gaussian_nll</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">):</span>
+    <span class="n">mu_hat</span> <span class="o">=</span> <span class="n">y_hat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">var_hat</span> <span class="o">=</span> <span class="n">y_hat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="o">=</span> <span class="mf">.5</span><span class="o">*</span><span class="n">tf</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">var_hat</span><span class="p">)</span> <span class="o">+</span> <span class="mf">.5</span><span class="o">*</span><span class="n">tf</span><span class="o">.</span><span class="nb">pow</span><span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">mu_hat</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="n">var_hat</span>
+
+<span class="n">model</span><span class="o">.</span><span class="nb">compile</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="n">gaussian_nll</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="s">'sgd'</span><span class="p">)</span></code></pre></figure>
+
+<p>Finally, we’ll define our prediction function that will provide us with both an uncertainty estimate and a expecation-based prediction from our model.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+
+<span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+    <span class="s">'''
+    Args:
+        model: The trained keras model
+        x: the input tensor with shape [N, M]
+        T: the number of monte carlo trials to sample
+    Returns:
+        y_star: The expected value of our prediction
+        var_star: The variance of our prediction
+    '''</span>
+    <span class="n">mu_hats</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">var_hats</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
+        <span class="n">y_hat</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">mu_hats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_hat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">var_hats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_hat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">mu_hats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mu_hats</span><span class="p">)</span>
+    <span class="n">var_hats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">var_hats</span><span class="p">)</span>
+
+    <span class="n">y_star</span> <span class="o">=</span> <span class="n">mu_hats</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">var_star</span> <span class="o">=</span> <span class="p">(</span><span class="n">var_hats</span> <span class="o">+</span> <span class="n">mu_hats</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="n">y_star</span><span class="o">**</span><span class="mi">2</span>
+    <span class="k">return</span> <span class="n">y_star</span><span class="p">,</span> <span class="n">var_star</span></code></pre></figure>
+
+<p>I know it might seem odd that we’re setting <code class="highlighter-rouge">train=True</code> when using the model to predict, but this is how the Keras framework determines that it needs to sample a random dropout mask when making a forward pass.</p>
+
+<p>Let’s use our function now:</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">y_star</span><span class="p">,</span> <span class="n">var_star</span> <span class="o">=</span> <span class="n">predict</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span></code></pre></figure>
+
+<p>Here, <code class="highlighter-rouge">y_star</code> is the expected value of our estimated distribution and <code class="highlighter-rouge">var_star</code> is its variance and can be used for our uncertainty estimate.</p>
+
+<!-- ![comparison](https://media.springernature.com/full/springer-static/image/art%3A10.1038%2Fs41598-017-17876-z/MediaObjects/41598_2017_17876_Fig4_HTML.jpg?as=webp) -->
+
+<h3 id="evaluation">How good are these uncertainty estimates?</h3>
+
+<p>We can review the experiments in <a href="https://arxiv.org/abs/1912.10481v1">A Systematic Comparison of Bayesian Deep Learning Robustness in Diabetic Retinopathy Tasks</a> to get a sense of how well the proposed uncertainty estimates capture the concept of uncertainty.</p>
+
+<p>In this paper, the authors train a image classifier to predict whether a patient suffers from <a href="https://en.wikipedia.org/wiki/Diabetic_retinopathy">Diabetic Retinopathy</a> based on pictures of the patient’s cornea. They train models using both techniques discussed in this blog post (in addition to a few other techniques used for estimating uncertainty).</p>
+
+<p>To test whether their uncertainty estimates meaningfully capture uncertainty, they propose a simple evaluation protocol:</p>
+
+<ol>
+  <li>Refer a fixed percentage of the test dataset to a expert human oracle by sweeping a threshold over the uncertainty estimates provided by their models.</li>
+  <li>Report their model’s accuracy on the remaining <em>retained</em> data split (i.e. the samples that were not referred).</li>
+</ol>
+
+<p>The idea behind this protocol is that an <em>accurate</em> measure of uncertainty would prioritize referring out the examples with high uncertainty, and as a result, the retained data would theoretically only contain examples that the model can predict with higher accuracy.</p>
+
+<p>Here are the results of running this protocol on the Diabetic Retinopathy dataset:</p>
+
+<figure class="fig">
+    <img src="/media/3017/evaluation.jpg" width="100%" />
+    <figcaption>
+    Plot of model accuracy on test data as the model refers less samples (based on the model's estimate of uncertainty) to a human oracle. For meaningful measures of uncertainty, we see accuracy increase as we decrease amount of retained data. Left: test images comes from the same machine type used for training data. Right: test images come from a different machine type than the one used for training data.
+    </figcaption>
+</figure>
+
+<p>In the plot above, the authors evaluate their ability to estimate uncertainty both when the test data comes from the same distribution as the training data <em>and</em> when the test data comes from a different distribution.</p>
+
+<p>As a sanity check we can look at the “Random Referal” baseline. Here, samples are chosen for referal at random regardless of their estimated uncertainty. As expected, randomly choosing samples neither increases nor decreases accuracy as we refer more samples to the human oracle. In contrast, both the MC Dropout and Model Ensembling methods increase accuracy as they refer more examples meaning their measures of uncertainty are finding examples that they are likely to get wrong when making a prediction.</p>
+
+<p>The “Deterministic” baseline uses a single neural network to make point-estimate predictions and computes its estimate of uncertainty using entropy. In other words, it’s the conventional neural network that everyone is use to working with. It does much worse than MC Dropout and Model Ensembling for both in-distribution and out-of-distribution test sets. Interestingly for out-of-distribution data, using its uncertainty estimates is <em>no better than random referral</em>.</p>
+
+<p>These experiments make a strong case for implementing either MC Dropout or Model ensembling to obtain more accurate uncertainty estimates. If you have the computational budget, combining both approaches (i.e. “Ensemble MC Dropout”) could yield the best results.</p>
+
+<h3 id="moving-beyond-traditional-leaderboard-metrics">Moving beyond traditional leaderboard metrics</h3>
+
+<p>I wrote this article because in a world driven by leaderboard AUC and AP metrics, it was worth pointing out that there are other measures, specifically the quality of your model’s uncertainty estimates, that matter for production environments.</p>
+
+<p>We have to know when to trust our models as much as we have to find models with the highest possible accuracy. Uncertainty quantification gives us this ability and it gives us more flexibility for deciding what to do with our model predictions.</p>
+
+<p>While the article only scratches the surface of the field, hopefully you now have some basic tools to quantify uncertainty and you understand why uncertainty is so critical for developing trustworthy models.</p>
+
+<h3 id="references">References</h3>
+
+<ol>
+  <li><a href="https://arxiv.org/abs/1612.01474">Simple and Scalable Predictive Uncertainty Estimation using Deep Ensembles</a></li>
+  <li><a href="http://proceedings.mlr.press/v48/gal16.pdf">Dropout as a Bayesian Approximation: Representing Model Uncertainty in Deep Learning</a></li>
+  <li><a href="https://arxiv.org/abs/1412.1897">Deep Neural Networks are Easily Fooled: High Confidence Predictions for Unrecognizable Images</a></li>
+  <li><a href="https://arxiv.org/abs/1703.04977">What Uncertainties Do We Need in Bayesian Deep Learning for Computer Vision?</a></li>
+  <li><a href="https://arxiv.org/abs/1606.06565">Concrete Problems in AI Safety</a></li>
+  <li><a href="https://arxiv.org/abs/1912.10481v1">A Systematic Comparison of Bayesian Deep Learning Robustness in Diabetic Retinopathy Tasks</a></li>
+  <li><a href="https://arxiv.org/abs/1906.02530">Can You Trust Your Model’s Uncertainty? Evaluating Predictive Uncertainty Under Dataset Shift</a></li>
+  <li><a href="https://arxiv.org/abs/1706.04599">On Calibration of Modern Neural Networks</a></li>
+  <li><a href="https://www.cs.toronto.edu/~hinton/absps/JMLRdropout.pdf">Dropout: A Simple Way to Prevent Neural Networks from Overfitting</a></li>
+  <li><a href="http://www.cs.ox.ac.uk/people/yarin.gal/website/thesis/1_introduction.pdf#page=7">Yarin Gal’s Thesis - The Importance of Knowing What We Don’t Know</a></li>
+  <li><a href="http://www.cs.ox.ac.uk/people/angelos.filos/publications/diabetic_retinopathy_diagnosis.pdf">Benchmarking Bayesian Deep Learning with Diabetic Retinopathy Diagnosis</a></li>
+  <li><a href="https://www.nature.com/articles/nature21056">Dermatologist-level classification of skin cancer with deep neural networks</a></li>
+  <li><a href="https://arxiv.org/pdf/1802.09127.pdf">Deep Bayesian Bandits Showdown</a></li>
+  <li><a href="https://www.cs.princeton.edu/courses/archive/spring08/cos424/scribe_notes/0214.pdf">Princeton COS424: Maximum Likelihood Estimation</a></li>
+  <li><a href="https://www.ntsb.gov/news/events/Pages/2019-HWY18MH010-BMG.aspx">Collision Between Vehicle Controlled by Developmental Automated Driving System and Pedestrian</a></li>
+  <li><a href="https://www.ntsb.gov/news/events/Pages/2019-HWY18MH010-BMG.aspx">Fukushima: The Failure of Predictive Models</a></li>
+  <li><a href="https://www.wired.com/story/when-it-comes-to-gorillas-google-photos-remains-blind/">When It Comes to Gorillas, Google Photos Remains Blind</a></li>
+</ol>
+
+
+    </div>
+
+    <br>
+    <br>
+
+    <div class="pitch">
+        <div style="float:left; margin-right: 2em;">
+            <img style="border-radius: 50px;" src="/static/images/author.jpg" width=96 alt="">
+        </div>
+        Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
+    </div>
+
+    <br>
+    <br>
+    <br>
+
+    <!-- related posts -->
+    <div id="related">
+        <h3>Related Posts</h3>
+            
+            <div class="related-post">
+              <div class="related-post-date">26 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-with-vantage-point-trees/">Similarity search 101 - Part 2 (Fast retrieval with vp-trees)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">19 Mar 2014</div>
+              <div class="related-post-title"><a href="/posts/similarity-search-101-part-1/">Similarity search 101 - Part 1 (overview)</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
+              <div class="related-post-date">14 Dec 2013</div>
+              <div class="related-post-title"><a href="/posts/faster-numpy-dot-product/">Faster Numpy Dot Product for Multi-dimensional Arrays</a></div>
+              <div class="clear"></div>
+            </div>
+            
+        </table>
+    </div>
+    <br> <br> <br>
+
+<!-- </div> -->
+
+<div class="header-rule"></div>
+<div class="content">
+
+
+    <!-- discussion -->
+    
+
+</div>
+<!-- /POST -->
+        </div><!-- /content-container -->
+
+        <div class="clear"></div>
+        <br>
+        <br>
+    </div>
+
+
+    <!-- SCRIPTS -->
+    <script type="text/javascript"
+        src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="/static/bower_components/pixastic/pixastic.custom.js"></script>
+
+    <!-- colorbox -->
+    <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $(".post-content p img, .post-content figure img")
+                .colorbox({
+                    // no transition
+                    transition: "none",
+
+                    // use image src as href
+                    href: function () {
+                        return this.getAttribute('src');
+                    },
+
+                    title: function () {
+                        return this.getAttribute('alt');
+                    },
+
+
+                    // slightly dark bg
+                    opacity: 1,
+
+                    // set max widths x height
+                    scalePhotos: true,
+                    maxWidth: "85%",
+                    maxHeight: "80%",
+
+                    // make it so overlay is fixed
+                    fixed: true,
+
+                    // group photos in posts
+                    rel: "gallery"
+                });
+        });
+    </script>
+
+    <!-- page specific scripts -->
+    
+
+    
+</body>
+
+
+</html>

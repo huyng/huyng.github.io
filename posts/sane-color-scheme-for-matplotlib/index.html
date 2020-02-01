@@ -8,10 +8,10 @@
     <link rel="shortcut icon" href="/static/images/favicon.ico">
     <link rel="alternate" type="application/rss+xml" href="/atom.xml" />
     <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
-    <link rel="stylesheet" href="/static/styles/syntax.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/monokai.css" type="text/css" media="screen" charset="utf-8">
     <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css">
     <!-- <link href="https://fonts.googleapis.com/css?family=Lora&display=swap" rel="stylesheet"> -->
-    <link href="https://fonts.googleapis.com/css?family=Lora|Rock+Salt&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Lora:400,700|Rock+Salt&display=swap" rel="stylesheet">
 
     <!-- fonts -->
     <link href="//netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
@@ -32,6 +32,7 @@
 
 <body>
     <div class="container">
+
 
         <br>
         <div class="site-title"><a href="/">Searching Gradients</a></div>
@@ -59,13 +60,14 @@
                 <li class="social-media-nav">
                     <a id="rss" href="/atom.xml">
                         <!-- <span style="color:#444"><i class="icon-rss-sign icon-medium"></i></span> -->
-                        feed
+                       rss
                     </a>
                 </li>
             </ul>
         </div>
     </div>
-
+    <br>
+    <hr>
     <div class="container">
         
 
@@ -73,15 +75,14 @@
             <!-- POST -->
 
 
-<br>
-<br>
 <!-- <div class="header-rule"></div> -->
 <div class="post content">
     
-    <div class="post-date">08 Feb 2011</div>
+    <div class="post-date">
+        08 Feb 2011 &nbsp; &ndash; &nbsp; <a style="color:#888" href="https://everyhue.me">Huy Nguyen</a>
+    </div>
     <br>
     <h2 class="post-title"><a href="/posts/sane-color-scheme-for-matplotlib/">GGPlot2 theme for Matplotlib</a></h2>
-    <br>
     <div class="post-content">
     <p>
     John Hunter, creator of <a href="http://matplotlib.sourceforge.net/">MatPlotlib</a>, originally designed it&rsquo;s color scheme to be familiar to Matlab users. As it turns out, the color scheme works well for publication material but doesn't work so great for viewing visualizations on the web.
@@ -102,7 +103,7 @@
 
     <div class="pitch">
         <div style="float:left; margin-right: 2em;">
-            <img style="border-radius: 50px;" src="https://pbs.twimg.com/profile_images/1207002509836877825/hTmuaFp7_400x400.jpg" width=75 alt="">
+            <img style="border-radius: 50px;" src="/static/images/author.jpg" width=96 alt="">
         </div>
         Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
     </div>
@@ -116,6 +117,12 @@
         <h3>Related Posts</h3>
             
             <div class="related-post">
+              <div class="related-post-date">20 Jan 2020</div>
+              <div class="related-post-title"><a href="/posts/why-uncertainty-matters/">Why Uncertainty Matters in Deep Learning and How to Estimate It</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
               <div class="related-post-date">26 Mar 2014</div>
               <div class="related-post-title"><a href="/posts/similarity-search-101-with-vantage-point-trees/">Similarity search 101 - Part 2 (Fast retrieval with vp-trees)</a></div>
               <div class="clear"></div>
@@ -127,17 +134,11 @@
               <div class="clear"></div>
             </div>
             
-            <div class="related-post">
-              <div class="related-post-date">14 Dec 2013</div>
-              <div class="related-post-title"><a href="/posts/faster-numpy-dot-product/">Faster Numpy Dot Product for Multi-dimensional Arrays</a></div>
-              <div class="clear"></div>
-            </div>
-            
         </table>
     </div>
     <br> <br> <br>
 
-</div>
+<!-- </div> -->
 
 <div class="header-rule"></div>
 <div class="content">
@@ -184,7 +185,7 @@
     <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
     <script type="text/javascript">
         $(document).ready(function () {
-            $(".post-content p img")
+            $(".post-content p img, .post-content figure img")
                 .colorbox({
                     // no transition
                     transition: "none",

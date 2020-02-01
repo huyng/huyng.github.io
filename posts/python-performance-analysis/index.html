@@ -8,10 +8,10 @@
     <link rel="shortcut icon" href="/static/images/favicon.ico">
     <link rel="alternate" type="application/rss+xml" href="/atom.xml" />
     <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
-    <link rel="stylesheet" href="/static/styles/syntax.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/monokai.css" type="text/css" media="screen" charset="utf-8">
     <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css">
     <!-- <link href="https://fonts.googleapis.com/css?family=Lora&display=swap" rel="stylesheet"> -->
-    <link href="https://fonts.googleapis.com/css?family=Lora|Rock+Salt&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Lora:400,700|Rock+Salt&display=swap" rel="stylesheet">
 
     <!-- fonts -->
     <link href="//netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
@@ -32,6 +32,7 @@
 
 <body>
     <div class="container">
+
 
         <br>
         <div class="site-title"><a href="/">Searching Gradients</a></div>
@@ -59,13 +60,14 @@
                 <li class="social-media-nav">
                     <a id="rss" href="/atom.xml">
                         <!-- <span style="color:#444"><i class="icon-rss-sign icon-medium"></i></span> -->
-                        feed
+                       rss
                     </a>
                 </li>
             </ul>
         </div>
     </div>
-
+    <br>
+    <hr>
     <div class="container">
         
 
@@ -73,17 +75,35 @@
             <!-- POST -->
 
 
-<br>
-<br>
 <!-- <div class="header-rule"></div> -->
 <div class="post content">
     
-    <div class="post-date">03 Sep 2013</div>
+    <div class="post-date">
+        03 Sep 2013 &nbsp; &ndash; &nbsp; <a style="color:#888" href="https://everyhue.me">Huy Nguyen</a>
+    </div>
     <br>
     <h2 class="post-title"><a href="/posts/python-performance-analysis/">A Guide to Analyzing Python Performance</a></h2>
-    <br>
     <div class="post-content">
-    <p>While it’s not always the case that every Python program you write will require a rigorous performance analysis, it is reassuring to know that there are a wide variety of tools in Python’s ecosystem that one can turn to when the time arises.</p>
+    <ul id="markdown-toc">
+  <li><a href="#introduction" id="markdown-toc-introduction">Introduction</a></li>
+  <li><a href="#coarse-grain-timing-with-time" id="markdown-toc-coarse-grain-timing-with-time">Coarse grain timing with time</a></li>
+  <li><a href="#fine-grain-timing-with-a-timing-context-manager" id="markdown-toc-fine-grain-timing-with-a-timing-context-manager">Fine grain timing with a timing context manager</a></li>
+  <li><a href="#line-by-line-timing-and-execution-frequency-with-a-profiler" id="markdown-toc-line-by-line-timing-and-execution-frequency-with-a-profiler">Line-by-line timing and execution frequency with a profiler</a></li>
+  <li><a href="#how-much-memory-does-it-use" id="markdown-toc-how-much-memory-does-it-use">How much memory does it use?</a></li>
+  <li><a href="#ipython-shortcuts-for-line_profiler-and-memory_profiler" id="markdown-toc-ipython-shortcuts-for-line_profiler-and-memory_profiler">IPython shortcuts for line_profiler and memory_profiler</a></li>
+  <li><a href="#wheres-the-memory-leak" id="markdown-toc-wheres-the-memory-leak">Where’s the memory leak?</a>    <ul>
+      <li><a href="#which-objects-are-the-most-common" id="markdown-toc-which-objects-are-the-most-common">Which objects are the most common?</a></li>
+      <li><a href="#which-objects-have-been-added-or-deleted" id="markdown-toc-which-objects-have-been-added-or-deleted">Which objects have been added or deleted?</a></li>
+      <li><a href="#what-is-referencing-this-leaky-object" id="markdown-toc-what-is-referencing-this-leaky-object">What is referencing this leaky object?</a></li>
+    </ul>
+  </li>
+  <li><a href="#effort-vs-precision" id="markdown-toc-effort-vs-precision">Effort vs precision</a></li>
+  <li><a href="#refrences" id="markdown-toc-refrences">Refrences</a></li>
+</ul>
+
+<h3 id="introduction">Introduction</h3>
+
+<p>While it’s not always the case that every Python program you write will require a rigorous performance analysis, it is reassuring to know that there are a wide variety of tools in Python’s ecosystem that one can turn to when the time arises.</p>
 
 <p>Analyzing a program’s performance boils down to answering 4 basic questions:</p>
 
@@ -175,25 +195,26 @@ sys     0m0.003s</code></pre></figure>
 
 <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">@</span><span class="n">profile</span>
 <span class="k">def</span> <span class="nf">primes</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">n</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-    <span class="k">elif</span> <span class="n">n</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span>
-    <span class="n">s</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
     <span class="n">mroot</span> <span class="o">=</span> <span class="n">n</span> <span class="o">**</span> <span class="mf">0.5</span>
-    <span class="n">half</span><span class="o">=</span><span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="mi">1</span>
-    <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
-    <span class="n">m</span><span class="o">=</span><span class="mi">3</span>
+    <span class="n">half</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="mi">1</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="mi">3</span>
     <span class="k">while</span> <span class="n">m</span> <span class="o">&lt;=</span> <span class="n">mroot</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
-            <span class="n">j</span><span class="o">=</span><span class="p">(</span><span class="n">m</span><span class="o">*</span><span class="n">m</span><span class="o">-</span><span class="mi">3</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
-            <span class="n">s</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="mi">0</span>
-            <span class="k">while</span> <span class="n">j</span><span class="o">&lt;</span><span class="n">half</span><span class="p">:</span>
-                <span class="n">s</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="mi">0</span>
-                <span class="n">j</span><span class="o">+=</span><span class="n">m</span>
-        <span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span>
-        <span class="n">m</span><span class="o">=</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span><span class="o">+</span><span class="mi">3</span>
-    <span class="k">return</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">s</span> <span class="k">if</span> <span class="n">x</span><span class="p">]</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="p">(</span><span class="n">m</span><span class="o">*</span><span class="n">m</span> <span class="o">-</span> <span class="mi">3</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+            <span class="n">s</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">while</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">half</span><span class="p">:</span>
+                <span class="n">s</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">j</span> <span class="o">+=</span> <span class="n">m</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">i</span> <span class="o">+</span> <span class="mi">3</span>
+    <span class="k">return</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">s</span> <span class="k">if</span> <span class="n">x</span><span class="p">]</span>
+
 <span class="n">primes</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span></code></pre></figure>
 
 <p>Once you’ve gotten your code setup with the <code class="highlighter-rouge">@profile</code> decorator, use <code class="highlighter-rouge">kernprof.py</code> to run your script.</p>
@@ -392,7 +413,7 @@ tuple                16969        +1
 
 <p>As with many other topics, running a performance analysis means balancing the tradeoffs between effort and precision. When in doubt, implement the simplest solution that will suit your current needs.</p>
 
-<h5 id="refrences">Refrences</h5>
+<h3 id="refrences">Refrences</h3>
 
 <ul>
   <li><a href="http://stackoverflow.com/questions/556405/what-do-real-user-and-sys-mean-in-the-output-of-time1">stack overflow - time explained</a></li>
@@ -409,7 +430,7 @@ tuple                16969        +1
 
     <div class="pitch">
         <div style="float:left; margin-right: 2em;">
-            <img style="border-radius: 50px;" src="https://pbs.twimg.com/profile_images/1207002509836877825/hTmuaFp7_400x400.jpg" width=75 alt="">
+            <img style="border-radius: 50px;" src="/static/images/author.jpg" width=96 alt="">
         </div>
         Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
     </div>
@@ -423,6 +444,12 @@ tuple                16969        +1
         <h3>Related Posts</h3>
             
             <div class="related-post">
+              <div class="related-post-date">20 Jan 2020</div>
+              <div class="related-post-title"><a href="/posts/why-uncertainty-matters/">Why Uncertainty Matters in Deep Learning and How to Estimate It</a></div>
+              <div class="clear"></div>
+            </div>
+            
+            <div class="related-post">
               <div class="related-post-date">26 Mar 2014</div>
               <div class="related-post-title"><a href="/posts/similarity-search-101-with-vantage-point-trees/">Similarity search 101 - Part 2 (Fast retrieval with vp-trees)</a></div>
               <div class="clear"></div>
@@ -434,17 +461,11 @@ tuple                16969        +1
               <div class="clear"></div>
             </div>
             
-            <div class="related-post">
-              <div class="related-post-date">14 Dec 2013</div>
-              <div class="related-post-title"><a href="/posts/faster-numpy-dot-product/">Faster Numpy Dot Product for Multi-dimensional Arrays</a></div>
-              <div class="clear"></div>
-            </div>
-            
         </table>
     </div>
     <br> <br> <br>
 
-</div>
+<!-- </div> -->
 
 <div class="header-rule"></div>
 <div class="content">
@@ -491,7 +512,7 @@ tuple                16969        +1
     <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
     <script type="text/javascript">
         $(document).ready(function () {
-            $(".post-content p img")
+            $(".post-content p img, .post-content figure img")
                 .colorbox({
                     // no transition
                     transition: "none",

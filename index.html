@@ -8,10 +8,10 @@
     <link rel="shortcut icon" href="/static/images/favicon.ico">
     <link rel="alternate" type="application/rss+xml" href="/atom.xml" />
     <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
-    <link rel="stylesheet" href="/static/styles/syntax.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/monokai.css" type="text/css" media="screen" charset="utf-8">
     <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css">
     <!-- <link href="https://fonts.googleapis.com/css?family=Lora&display=swap" rel="stylesheet"> -->
-    <link href="https://fonts.googleapis.com/css?family=Lora|Rock+Salt&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Lora:400,700|Rock+Salt&display=swap" rel="stylesheet">
 
     <!-- fonts -->
     <link href="//netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
@@ -32,6 +32,7 @@
 
 <body>
     <div class="container">
+
 
         <br>
         <div class="site-title"><a href="/">Searching Gradients</a></div>
@@ -59,27 +60,35 @@
                 <li class="social-media-nav">
                     <a id="rss" href="/atom.xml">
                         <!-- <span style="color:#444"><i class="icon-rss-sign icon-medium"></i></span> -->
-                        feed
+                       rss
                     </a>
                 </li>
             </ul>
         </div>
     </div>
-
+    <br>
+    <hr>
     <div class="container">
         
 
         <div id="content-container">
-            <br>
-<br>
-
-
-<div class="post content">
+            <div class="post content">
   <h2 class="post-title">Writing</h2>
 </div>
 
 
 <table class="archives content">
+  
+  <!-- <tr><td colspan=2><h4>2020</h4></td></tr> -->
+  
+  
+  <tr>
+    <!-- <td class="archive-date">20 Jan 2020</td> -->
+    <td class="archive-title"><a href="/posts/why-uncertainty-matters/">Why Uncertainty Matters in Deep Learning and How to Estimate It</a></td>
+  </tr>
+  
+  
+  <!-- <tr><td colspan=2><br></td></tr> -->
   
   <!-- <tr><td colspan=2><h4>2014</h4></td></tr> -->
   
@@ -182,7 +191,7 @@
 <div class="post content">
   <div class="pitch">
     <div style="float:left; margin-right: 2em;">
-      <img style="border-radius: 50px;" src="https://pbs.twimg.com/profile_images/1207002509836877825/hTmuaFp7_400x400.jpg" width=75 alt=""></div>Hey
+      <img style="border-radius: 50px;" src="https://pbs.twimg.com/profile_images/1207002509836877825/hTmuaFp7_400x400.jpg" width=96 alt=""></div>Hey
     there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by
     subscribing to my <a href="/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a
       href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
@@ -205,7 +214,7 @@
     <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
     <script type="text/javascript">
         $(document).ready(function () {
-            $(".post-content p img")
+            $(".post-content p img, .post-content figure img")
                 .colorbox({
                     // no transition
                     transition: "none",
