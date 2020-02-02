@@ -4,7 +4,7 @@
  <title>Searching Gradients with Huy Nguyen</title>
  <link href="http://blog.everyhue.me/atom.xml" rel="self"/>
  <link href="http://blog.everyhue.me/"/>
- <updated>2020-02-01T09:55:42-08:00</updated>
+ <updated>2020-02-02T09:26:39-08:00</updated>
  <id>http://blog.everyhue.me/</id>
  <author>
    <name>Huy Nguyen</name>
@@ -39,9 +39,10 @@
 
 &lt;p&gt;For &lt;a href=&quot;https://arxiv.org/abs/1606.06565&quot;&gt;safety&lt;/a&gt; critical systems and infrastructure, you need to know when to trust a model’s prediction and when you should be more cautious about its output.&lt;/p&gt;
 
-&lt;p&gt;Suppose you train a model to detect pedestrians, but you only have access to &lt;em&gt;day time&lt;/em&gt; video feeds as training data due to data constraints. You would expect this model to fail miserably at &lt;em&gt;night&lt;/em&gt; since the videos would look nothing like the data the model was trained on. From your perspective this problem is easy to see, but would your model know that it’s operating in a completely new environment? Or would it just go about predicting everything at night as “no pedestrian”?&lt;/p&gt;
+&lt;!--
+Suppose you train a model to detect pedestrians, but only had access to *day time* videos for training data. Would you trust your model's predictions if had to run it . But, would your model know that it's operating in a completely new environment? Or would it just go about predicting everything at night as &quot;no pedestrian&quot;?
 
-&lt;p&gt;How would you know when to trust your model?&lt;/p&gt;
+How would you know when to trust your model? --&gt;
 
 &lt;p&gt;The problem with conventional deep neural networks is that they only provide &lt;a href=&quot;https://en.wikipedia.org/wiki/Point_estimation&quot;&gt;point-estimates&lt;/a&gt; which are single predictive values given some input data. What you don’t get with these models is a measure of how uncertain they are for any given prediction.&lt;/p&gt;
 
@@ -49,21 +50,19 @@
 
 &lt;p&gt;While the softmax “probability” of a neural network classifier is commonly interpreted and used as a heuristic for uncertainty, scientists have shown that this measure often &lt;a href=&quot;https://arxiv.org/abs/1412.1897&quot;&gt;overestimates its confidence&lt;/a&gt;, even on examples that are unrecognizable when compared to a model’s training set.&lt;/p&gt;
 
-&lt;p&gt;What you really need is an &lt;em&gt;accurate&lt;/em&gt; measure of uncertainty.&lt;/p&gt;
-
-&lt;p&gt;An &lt;em&gt;accurate&lt;/em&gt; measure of uncertainty lets your model say “I don’t know” when it encounters a distribution of data that it wasn’t trained with or when it evaluates an example that can be interpreted in multiple ways.&lt;/p&gt;
+&lt;p&gt;What we really need is an &lt;em&gt;accurate&lt;/em&gt; measure of uncertainty. Having one lets your model say “I don’t know” when it encounters a distribution of data that it wasn’t trained with or when it evaluates an example that can be interpreted in multiple ways.&lt;/p&gt;
 
 &lt;!-- If you had access to such a measure, you'd be able to take different and more [useful](#what_you_can_do) actions based upon how confident the model was of its prediction. --&gt;
 
 &lt;h3 id=&quot;uncertainty-estimates-what-are-they-good-for&quot;&gt;Uncertainty estimates, what are they good for?&lt;/h3&gt;
 
-&lt;p&gt;A &lt;em&gt;good&lt;/em&gt; uncertainty estimate gives you more flexibility. You don’t have to always assign the same amount of trust to every model prediction, and likewise, you don’t always have to take the same action based upon those predictions.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Accurate&lt;/em&gt; uncertainty estimates give you more flexibility when dealing with your model. You don’t have to always assign the same amount of trust to every model prediction, and likewise, you don’t always have to take the same action based upon those predictions.&lt;/p&gt;
 
 &lt;p&gt;For example, when uncertainty is high you can decide to:&lt;/p&gt;
 
 &lt;ul&gt;
   &lt;li&gt;Refrain from taking any action on the prediction at all.&lt;/li&gt;
-  &lt;li&gt;Refer the particular piece of data to a human to make a final call.&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.cs.ox.ac.uk/people/angelos.filos/publications/diabetic_retinopathy_diagnosis.pdf&quot;&gt;Refer&lt;/a&gt; the particular piece of data to a human to make a final call.&lt;/li&gt;
   &lt;li&gt;Collect more examples that cause high uncertainty to retrain your model.&lt;/li&gt;
   &lt;li&gt;Implement a tiered prediction strategy by sending the data to a slower, but more accurate model, when uncertainty is high.&lt;/li&gt;
 &lt;/ul&gt;
@@ -232,7 +231,8 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
 &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;gaussian_nll&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y_hat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
     &lt;span class=&quot;n&quot;&gt;mu_hat&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y_hat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[:,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
     &lt;span class=&quot;n&quot;&gt;var_hat&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y_hat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[:,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;.5&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;var_hat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;.5&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;pow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mu_hat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;var_hat&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;loss&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;math&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;var_hat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;2.&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;pow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mu_hat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;2.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;var_hat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;loss&lt;/span&gt;
 
 &lt;span class=&quot;n&quot;&gt;model&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;compile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loss&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gaussian_nll&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;optimizer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'sgd'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
@@ -295,7 +295,7 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
 &lt;figure class=&quot;fig&quot;&gt;
     &lt;img src=&quot;/media/3017/evaluation.jpg&quot; width=&quot;100%&quot; /&gt;
     &lt;figcaption&gt;
-    Plot of model accuracy on test data as the model refers less samples (based on the model's estimate of uncertainty) to a human oracle. For meaningful measures of uncertainty, we see accuracy increase as we decrease amount of retained data. Left: test images comes from the same machine type used for training data. Right: test images come from a different machine type than the one used for training data.
+    Plot of model accuracy on test data as the model refers less samples (based on the model's estimate of uncertainty) to a human oracle. For meaningful measures of uncertainty, we see accuracy increase as we decrease amount of retained data. Left: test images comes from the same machine type used for training data. Right: test images come from a different machine type than the one used for training data. [&lt;a href=&quot;https://arxiv.org/abs/1912.10481v1&quot;&gt;Filos et al.&lt;/a&gt;]
     &lt;/figcaption&gt;
 &lt;/figure&gt;
 
