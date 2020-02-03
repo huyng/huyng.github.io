@@ -4,7 +4,7 @@
  <title>Searching Gradients with Huy Nguyen</title>
  <link href="http://blog.everyhue.me/atom.xml" rel="self"/>
  <link href="http://blog.everyhue.me/"/>
- <updated>2020-02-02T21:49:29-08:00</updated>
+ <updated>2020-02-03T11:43:01-08:00</updated>
  <id>http://blog.everyhue.me/</id>
  <author>
    <name>Huy Nguyen</name>
@@ -111,7 +111,9 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
 
 &lt;h3 id=&quot;how-to-estimate-uncertainty-overview&quot;&gt;How to estimate uncertainty (overview)&lt;/h3&gt;
 
-&lt;p&gt;&lt;a href=&quot;http://proceedings.mlr.press/v48/gal16.pdf&quot;&gt;Monte Carlo Dropout&lt;/a&gt; and &lt;a href=&quot;https://arxiv.org/abs/1612.01474&quot;&gt;Model Ensembling&lt;/a&gt; are popular methods for estimating uncertainty in deep learning. These methods try to account for both aleatoric and epistemic uncertainty.&lt;/p&gt;
+&lt;p&gt;There is ongoing research into how best to estimate uncertainty and it is not a solved problem yet. &lt;a href=&quot;http://proceedings.mlr.press/v48/gal16.pdf&quot;&gt;Monte Carlo Dropout&lt;/a&gt; and &lt;a href=&quot;https://arxiv.org/abs/1612.01474&quot;&gt;Model Ensembling&lt;/a&gt; are methods that have garnered recent attention because they mesh well with existing neural network architectures and are less computationally constrained than other methods.&lt;/p&gt;
+
+&lt;p&gt;These methods try to account for both aleatoric and epistemic uncertainty.&lt;/p&gt;
 
 &lt;p&gt;Although the authors behind these methods give different motivations for their work, both approach the problem of estimating uncertainty using a similar strategy:&lt;/p&gt;
 
