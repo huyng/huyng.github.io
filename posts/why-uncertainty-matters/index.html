@@ -276,7 +276,7 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
 
 <p>If we’re using Model Ensembling, rather than performing <script type="math/tex">T</script> forward passes through a single network with randomly sampled <script type="math/tex">\mathbf{w}_t</script> dropout masks, we instead get our predictions from <script type="math/tex">M</script> trained models whose parameters <script type="math/tex">\mathbf{\theta}_m</script> are initialized to random starting points. Everything else remains the same.</p>
 
-<p>Note: These formulations were described in follow-on papers to the MC Dropout paper from <a href="https://arxiv.org/abs/1703.04977">Kendall and Gal</a> and <a href="https://arxiv.org/abs/1612.01474">Lakshminarayanan et. al</a>.</p>
+<p>Note: These formulations for regression are described in follow-on papers to the MC Dropout paper from <a href="https://arxiv.org/abs/1703.04977">Kendall and Gal</a>; <a href="https://arxiv.org/abs/1612.01474">Lakshminarayanan et. al</a> also derives the same formulation using <a href="https://en.wikipedia.org/wiki/Scoring_rule">Proper Scoring Rules</a>.</p>
 
 <h4 id="classification">Estimating uncertainty for classification</h4>
 

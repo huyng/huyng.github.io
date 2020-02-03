@@ -4,7 +4,7 @@
  <title>Searching Gradients with Huy Nguyen</title>
  <link href="http://blog.everyhue.me/atom.xml" rel="self"/>
  <link href="http://blog.everyhue.me/"/>
- <updated>2020-02-03T12:52:01-08:00</updated>
+ <updated>2020-02-03T13:42:01-08:00</updated>
  <id>http://blog.everyhue.me/</id>
  <author>
    <name>Huy Nguyen</name>
@@ -187,7 +187,7 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
 
 &lt;p&gt;If we’re using Model Ensembling, rather than performing &lt;script type=&quot;math/tex&quot;&gt;T&lt;/script&gt; forward passes through a single network with randomly sampled &lt;script type=&quot;math/tex&quot;&gt;\mathbf{w}_t&lt;/script&gt; dropout masks, we instead get our predictions from &lt;script type=&quot;math/tex&quot;&gt;M&lt;/script&gt; trained models whose parameters &lt;script type=&quot;math/tex&quot;&gt;\mathbf{\theta}_m&lt;/script&gt; are initialized to random starting points. Everything else remains the same.&lt;/p&gt;
 
-&lt;p&gt;Note: These formulations were described in follow-on papers to the MC Dropout paper from &lt;a href=&quot;https://arxiv.org/abs/1703.04977&quot;&gt;Kendall and Gal&lt;/a&gt; and &lt;a href=&quot;https://arxiv.org/abs/1612.01474&quot;&gt;Lakshminarayanan et. al&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Note: These formulations for regression are described in follow-on papers to the MC Dropout paper from &lt;a href=&quot;https://arxiv.org/abs/1703.04977&quot;&gt;Kendall and Gal&lt;/a&gt;; &lt;a href=&quot;https://arxiv.org/abs/1612.01474&quot;&gt;Lakshminarayanan et. al&lt;/a&gt; also derives the same formulation using &lt;a href=&quot;https://en.wikipedia.org/wiki/Scoring_rule&quot;&gt;Proper Scoring Rules&lt;/a&gt;.&lt;/p&gt;
 
 &lt;h4 id=&quot;classification&quot;&gt;Estimating uncertainty for classification&lt;/h4&gt;
 
