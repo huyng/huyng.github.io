@@ -85,7 +85,7 @@
     <ul id="markdown-toc">
   <li><a href="#more-trustworthy-models" id="markdown-toc-more-trustworthy-models">More trustworthy models</a></li>
   <li><a href="#uncertainty-estimates-what-are-they-good-for" id="markdown-toc-uncertainty-estimates-what-are-they-good-for">Uncertainty estimates, what are they good for?</a></li>
-  <li><a href="#where-does-uncertainty-come-from" id="markdown-toc-where-does-uncertainty-come-from">Where does uncertainty come from?</a></li>
+  <li><a href="#sources-of-uncertainty" id="markdown-toc-sources-of-uncertainty">Sources of uncertainty</a></li>
   <li><a href="#how-to-estimate-uncertainty-overview" id="markdown-toc-how-to-estimate-uncertainty-overview">How to estimate uncertainty (overview)</a>    <ul>
       <li><a href="#monte-carlo-dropout" id="markdown-toc-monte-carlo-dropout">Monte Carlo Dropout</a></li>
       <li><a href="#deep-ensembles" id="markdown-toc-deep-ensembles">Deep Ensembles</a></li>
@@ -133,7 +133,7 @@ How would you know when to trust your model? -->
 
 <p>Blindly assigning the same amount of trust and action for every model prediction can lead to <a href="https://www.wired.com/story/when-it-comes-to-gorillas-google-photos-remains-blind/">embarrassing</a>, <a href="https://mpra.ub.uni-muenchen.de/69383/1/MPRA_paper_69383.pdf">serious</a>, or even <a href="https://www.ntsb.gov/news/events/Pages/2019-HWY18MH010-BMG.aspx">fatal</a> mistakes in your autonomous systems.</p>
 
-<h3 id="where-does-uncertainty-come-from">Where does uncertainty come from?</h3>
+<h3 id="sources-of-uncertainty">Sources of uncertainty</h3>
 
 <p>We have to understand where uncertainty comes from to know how we can account for it in our models. Let’s look at two major sources of uncertainty in predictive modeling below.</p>
 
@@ -281,9 +281,9 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
 <span class="kn">from</span> <span class="nn">tensorflow.keras</span> <span class="kn">import</span> <span class="n">Sequential</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">Sequential</span><span class="p">([</span>
-    <span class="n">Dense</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s">'relu'</span><span class="p">),</span>
+    <span class="n">Dense</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s">'relu'</span><span class="p">),</span>
     <span class="n">Dropout</span><span class="p">(</span><span class="mf">.5</span><span class="p">),</span>
-    <span class="n">Dense</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s">'relu'</span><span class="p">),</span>
+    <span class="n">Dense</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s">'relu'</span><span class="p">),</span>
     <span class="n">Dropout</span><span class="p">(</span><span class="mf">.5</span><span class="p">),</span>
     <span class="n">Dense</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="bp">None</span><span class="p">),</span>
 <span class="p">])</span></code></pre></figure>
@@ -292,11 +292,20 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
 
 <p>We’ll now define the loss for the regression task based on the equations above:</p>
 
-<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">gaussian_nll</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">):</span>
-    <span class="n">mu_hat</span> <span class="o">=</span> <span class="n">y_hat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
-    <span class="n">var_hat</span> <span class="o">=</span> <span class="n">y_hat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
-    <span class="n">loss</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">var_hat</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span> <span class="o">+</span> <span class="n">tf</span><span class="o">.</span><span class="nb">pow</span><span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">mu_hat</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">var_hat</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">loss</span>
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">gaussian_nll</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+    <span class="s">"""
+    Gaussian negative log likelihood
+
+    Note: to make training more stable, we optimize
+    a modified loss by having our model predict log(sigma^2)
+    rather than sigma^2.
+    """</span>
+
+    <span class="n">y_true</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">mu</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">si</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="p">(</span><span class="n">si</span> <span class="o">+</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">squared_difference</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">si</span><span class="p">))</span> <span class="o">/</span> <span class="mf">2.0</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
 
 <span class="n">model</span><span class="o">.</span><span class="nb">compile</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="n">gaussian_nll</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="s">'sgd'</span><span class="p">)</span></code></pre></figure>
 
@@ -304,38 +313,43 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
 
 <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
 
-<span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
     <span class="s">'''
     Args:
         model: The trained keras model
         x: the input tensor with shape [N, M]
         T: the number of monte carlo trials to sample
     Returns:
-        y_star: The expected value of our prediction
-        var_star: The variance of our prediction
+        y_mean: The expected value of our prediction
+        y_std: The standard deviation of our prediction
     '''</span>
-    <span class="n">mu_hats</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">var_hats</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">mu_arr</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">si_arr</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
-        <span class="n">y_hat</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-        <span class="n">mu_hats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_hat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
-        <span class="n">var_hats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_hat</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="n">y_pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">training</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">si</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
 
-    <span class="n">mu_hats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mu_hats</span><span class="p">)</span>
-    <span class="n">var_hats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">var_hats</span><span class="p">)</span>
+        <span class="n">mu_arr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span>
+        <span class="n">si_arr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">si</span><span class="p">)</span>
 
-    <span class="n">y_star</span> <span class="o">=</span> <span class="n">mu_hats</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-    <span class="n">var_star</span> <span class="o">=</span> <span class="p">(</span><span class="n">var_hats</span> <span class="o">+</span> <span class="n">mu_hats</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="n">y_star</span><span class="o">**</span><span class="mi">2</span>
-    <span class="k">return</span> <span class="n">y_star</span><span class="p">,</span> <span class="n">var_star</span></code></pre></figure>
+    <span class="n">mu_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mu_arr</span><span class="p">)</span>
+    <span class="n">si_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">si_arr</span><span class="p">)</span>
+    <span class="n">var_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">si_arr</span><span class="p">)</span>
+
+    <span class="n">y_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mu_arr</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">y_variance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">var_arr</span> <span class="o">+</span> <span class="n">mu_arr</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="n">y_mean</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">y_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">y_variance</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">y_mean</span><span class="p">,</span> <span class="n">y_std</span></code></pre></figure>
 
 <p>I know it might seem odd that we’re setting <code class="highlighter-rouge">train=True</code> when using the model to predict, but this is how the Keras framework determines that it needs to sample a random dropout mask when making a forward pass.</p>
 
 <p>Let’s use our function now:</p>
 
-<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">y_star</span><span class="p">,</span> <span class="n">var_star</span> <span class="o">=</span> <span class="n">predict</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span></code></pre></figure>
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">y_mean</span><span class="p">,</span> <span class="n">y_std</span> <span class="o">=</span> <span class="n">predict</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span></code></pre></figure>
 
-<p>Here, <code class="highlighter-rouge">y_star</code> is the expected value of our estimated distribution and <code class="highlighter-rouge">var_star</code> is its variance and can be used for our uncertainty estimate.</p>
+<p>Here, <code class="highlighter-rouge">y_mean</code> is the expected value of our estimated distribution and <code class="highlighter-rouge">y_std</code> is standard deviation and can be used for our uncertainty estimate.</p>
 
 <!-- ![comparison](https://media.springernature.com/full/springer-static/image/art%3A10.1038%2Fs41598-017-17876-z/MediaObjects/41598_2017_17876_Fig4_HTML.jpg?as=webp) -->
 
