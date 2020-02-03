@@ -403,3 +403,16 @@ div.related-post-title {
 .MathJax_Display {
     margin: 1.25em 0 !important;
 }
+
+#comment-button {
+    border: 1px solid #123;
+    font-family: Avenir, sans-serif;
+    text-align:center;
+    padding: 1em;
+    cursor: pointer;
+    border-radius: 8px;
+}
+#comment-button:hover {
+    border: 1px solid #5bcaff;;
+    color: #5bcaff;
+}

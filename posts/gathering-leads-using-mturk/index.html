@@ -13,7 +13,7 @@
     <meta name="twitter:site" content="@huyng" />
     <meta name="twitter:creator" content="@huyng" />
 
-    <meta property="og:url" content="https://blog.everhue.me//posts/gathering-leads-using-mturk/" />
+    <meta property="og:url" content="https://blog.everyhue.me/posts/gathering-leads-using-mturk/" />
     <meta property="og:title" content="Gathering Leads using MTurk" />
     <meta property='og:site_name' content='Searching Gradients'/>
 
@@ -23,7 +23,7 @@
 
     
 
-    <link rel="alternate" type="application/rss+xml" href="https://blog.everhue.me/atom.xml" />
+    <link rel="alternate" type="application/rss+xml" href="https://blog.everyhue.me/atom.xml" />
     <link rel="shortcut icon" href="/static/images/favicon.ico">
 
     <!-- stylesheets -->
@@ -73,7 +73,7 @@
                     </a>
                 </li>
                 <li class="social-media-nav">
-                    <a id="rss" href="https://blog.everhue.me/atom.xml">
+                    <a id="rss" href="https://blog.everyhue.me/atom.xml">
                         rss
                     </a>
                 </li>
@@ -122,7 +122,7 @@
         <div style="float:left; margin-right: 2em;">
             <img style="border-radius: 50px;" src="/static/images/author.jpg" width=96 alt="">
         </div>
-        Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="https://blog.everhue.me/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
+        Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="https://blog.everyhue.me/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
     </div>
 
     <br>
@@ -130,58 +130,49 @@
     <br>
 
     <!-- related posts -->
-    <div id="related">
-        <h3>Related Posts</h3>
-            
-            <div class="related-post">
-              <div class="related-post-date">20 Jan 2020</div>
-              <div class="related-post-title"><a href="/posts/why-uncertainty-matters/">Why Uncertainty Matters in Deep Learning and How to Estimate It</a></div>
-              <div class="clear"></div>
-            </div>
-            
-            <div class="related-post">
-              <div class="related-post-date">26 Mar 2014</div>
-              <div class="related-post-title"><a href="/posts/similarity-search-101-with-vantage-point-trees/">Similarity search 101 - Part 2 (Fast retrieval with vp-trees)</a></div>
-              <div class="clear"></div>
-            </div>
-            
-            <div class="related-post">
-              <div class="related-post-date">19 Mar 2014</div>
-              <div class="related-post-title"><a href="/posts/similarity-search-101-part-1/">Similarity search 101 - Part 1 (overview)</a></div>
-              <div class="clear"></div>
-            </div>
-            
-        </table>
-    </div>
-    <br> <br> <br>
+    
+    <br> <br>
 
 <!-- </div> -->
 
-<div class="header-rule"></div>
-<div class="content">
 
 
-    <!-- discussion -->
-    
+<div class="post-content">
 
-    <div id="disqus_thread"></div>
-    <script type="text/javascript">
-        var disqus_shortname = 'huyng';
-        var disqus_identifier = '583 http://www.huyng.com/?p=583';
-        var disqus_url = 'https://blog.everhue.me/posts/gathering-leads-using-mturk/';
+
+    <div id="comments" style="display: none;">
+        <h3>Discussion</h3>
+
+        <!-- discussion -->
+        
+
+        <div id="disqus_thread"></div>
+        <script type="text/javascript">
+            var disqus_shortname = 'huyng';
+            var disqus_identifier = '583 http://www.huyng.com/?p=583';
+            var disqus_url = 'https://blog.everyhue.me/posts/gathering-leads-using-mturk/';
+
+            
+            (function() {
+                var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+                dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+                (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+            })();
+            
+
+        </script>
+        <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+        
 
         
-        /* * * DON'T EDIT BELOW THIS LINE * * */
-        (function() {
-            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-            dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
-            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-        })();
-        
-    </script>
-    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+        <br>
+        <br>
+    </div>
+    <br>
+    <div id="comment-button" >
+        Show or Add comments
+    </div>
 
-    
 
 </div>
 <!-- /POST -->
@@ -227,6 +218,10 @@
                     // group photos in posts
                     rel: "gallery"
                 });
+            $('#comment-button').click(function() {
+                $('#comments').fadeIn();
+                $('#comment-button').hide();
+            });
         });
     </script>
 
