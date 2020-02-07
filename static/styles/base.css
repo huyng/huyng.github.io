@@ -298,10 +298,7 @@ div.post-content h6 {
 }
 
 /* images at the very top of posts*/
-img.marquee-image {
-    max-width:100%;
-    margin: 0 auto 1em auto;
-}
+
 
 div.post-content img {
     max-width:100%;
@@ -415,4 +412,20 @@ div.related-post-title {
 #comment-button:hover {
     border: 1px solid #5bcaff;;
     color: #5bcaff;
+}
+
+.full-width {
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+}
+.marquee-container {
+}
+
+img.marquee-image {
+    width:100%;
+    margin: 0 auto 1em auto;
 }
