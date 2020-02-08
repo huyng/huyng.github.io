@@ -9,20 +9,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 
     
+    <meta name="description" content="Searching Gradients is a research blog focused on visual search, computer vision, and deep learning. Written by Huy Nguyen." />
+    
+
+
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:site" content="@huyng" />
     <meta name="twitter:creator" content="@huyng" />
-
     <meta property="og:url" content="https://blog.everyhue.me/posts/gathering-leads-using-mturk/" />
     <meta property="og:title" content="Gathering Leads using MTurk" />
     <meta property='og:site_name' content='Searching Gradients'/>
 
     
 
-    
-
-    
-
+    <link rel="canonical" href="https://blog.everyhue.me/posts/gathering-leads-using-mturk/" />
     <link rel="alternate" type="application/rss+xml" href="https://blog.everyhue.me/atom.xml" />
     <link rel="shortcut icon" href="/static/images/favicon.ico">
 
@@ -150,11 +150,11 @@
             var disqus_url = 'https://blog.everyhue.me/posts/gathering-leads-using-mturk/';
 
             
-            (function() {
+            var callDisqus = (function() {
                 var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
                 dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
                 (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-            })();
+            });
             
 
         </script>
@@ -214,6 +214,7 @@
                     rel: "gallery"
                 });
             $('#comment-button').click(function() {
+                callDisqus();
                 $('#comments').fadeIn();
                 $('#comment-button').hide();
             });

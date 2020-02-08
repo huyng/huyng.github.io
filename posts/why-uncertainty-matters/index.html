@@ -9,25 +9,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 
     
+    <meta property="description" content="We review why uncertainty estimates are important and how to get them with Monte Carlo Dropout and Model Ensembling." />
+    <meta property="og:description" content="We review why uncertainty estimates are important and how to get them with Monte Carlo Dropout and Model Ensembling." />
+    
+
+
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:site" content="@huyng" />
     <meta name="twitter:creator" content="@huyng" />
-
     <meta property="og:url" content="https://blog.everyhue.me/posts/why-uncertainty-matters/" />
     <meta property="og:title" content="Why Uncertainty Matters in Deep Learning and How to Estimate It" />
     <meta property='og:site_name' content='Searching Gradients'/>
-
-    
-    <meta property="og:description" content="For safety critical systems, accurate uncertainty estimates give you more flexibility when dealing with your model." />
-    
 
     
     <meta property="og:image" content="https://blog.everyhue.me/media/3017/preview.jpg" />
     <meta property="twitter:image" content="https://blog.everyhue.me/media/3017/preview.jpg" />
     
 
-    
-
+    <link rel="canonical" href="https://blog.everyhue.me/posts/why-uncertainty-matters/" />
     <link rel="alternate" type="application/rss+xml" href="https://blog.everyhue.me/atom.xml" />
     <link rel="shortcut icon" href="/static/images/favicon.ico">
 
@@ -478,12 +477,13 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
                 this.page.url = 'https://blog.everyhue.me/posts/why-uncertainty-matters/';
                 this.page.identifier = 'https://blog.everyhue.me/posts/why-uncertainty-matters/';
             };
-            (function () {
+
+            var callDisqus = (function () {
                 var d = document, s = d.createElement('script');
                 s.src = 'https://searching-gradients.disqus.com/embed.js';
                 s.setAttribute('data-timestamp', +new Date());
                 (d.head || d.body).appendChild(s);
-            })();
+            });
         </script>
         <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
         
@@ -539,6 +539,7 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
                     rel: "gallery"
                 });
             $('#comment-button').click(function() {
+                callDisqus();
                 $('#comments').fadeIn();
                 $('#comment-button').hide();
             });
