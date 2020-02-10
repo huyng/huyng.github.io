@@ -487,10 +487,13 @@ tuple                16969        +1
         <br>
         <br>
     </div>
+
+    
     <br>
     <div id="comment-button" >
         Show or Add Comments
     </div>
+    
 
 </div>
 <!-- /POST -->
@@ -504,8 +507,22 @@ tuple                16969        +1
     <!-- SCRIPTS -->
     <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
     <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
     <script type="text/javascript">
+        MathJax.Hub.Config({
+            jax: ["input/TeX", "output/HTML-CSS"],
+            displayAlign: "left",
+            displayIndent: "1.2em",
+            CommonHTML: {
+                scale: 100,
+            },
+            TeX: {
+                equationNumbers: {
+                    autoNumber: "AMS"
+                }
+            }
+        });
+
         $(document).ready(function () {
             $(".post-content p img, .post-content figure img")
                 .colorbox({

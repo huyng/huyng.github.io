@@ -278,15 +278,21 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
 
 <p>If we are performing MC Dropout, to get a final prediction <script type="math/tex">\mathbf{\hat{y}}_\ast</script> , we can average the predicted softmax probabilities  over <script type="math/tex">T</script> stochastic forward passes of the data <script type="math/tex">\mathbf{x}</script> through our network <script type="math/tex">\mathbf{f}_{\theta}(\mathbf{x}; \mathbf{w}_t)</script> by sampling random dropout mask <script type="math/tex">\mathbf{w}_t</script> for each pass:</p>
 
-<script type="math/tex; mode=display">\mathbf{\hat{y}}_t = \mathit{Softmax}(\mathbf{f}_{\theta}(\mathbf{x}; \mathbf{w}_t))</script>
+<p>\begin{equation}
+    \mathbf{\hat{y}}_t = \mathit{Softmax}(\mathbf{f}_{\theta}(\mathbf{x}; \mathbf{w}_t))
+\end{equation}</p>
 
-<script type="math/tex; mode=display">\mathbf{\hat{y}}_\ast = \frac{1}{T} \sum_{t}{\mathbf{\hat{y}}_t}</script>
+<p>\begin{equation}
+    \mathbf{\hat{y}}_\ast = \frac{1}{T} \sum_{t}{\mathbf{\hat{y}}_t} $$
+\end{equation}</p>
 
 <p>If we’re using Model Ensembling, rather than performing <script type="math/tex">T</script> forward passes through a single network with randomly sampled <script type="math/tex">\mathbf{w}_t</script> dropout masks, we instead get our predictions from <script type="math/tex">M</script> trained models whose parameters <script type="math/tex">\mathbf{\theta}_m</script> are initialized to random starting points. Everything else stays the same.</p>
 
 <p>We measure the uncertainty of our probabilistic prediction <script type="math/tex">\mathbf{\hat{y}_\ast}</script> by computing its Entropy over its vector elements <script type="math/tex">\hat{y}_{\ast,c}</script> :</p>
 
-<script type="math/tex; mode=display">H(\mathbf{\hat{y}_\ast}) = - \sum_c^C \hat{y}_{*,i} * {\log{\hat{y}_{\ast,c}}}</script>
+<p>\begin{equation}
+    H(\mathbf{\hat{y}_\ast}) = - \sum_c^C \hat{y}_{*,i} * {\log{\hat{y}_{\ast,c}}}
+\end{equation}</p>
 
 <h4 id="sample-code">Sample code</h4>
 
@@ -490,10 +496,13 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
         <br>
         <br>
     </div>
+
+    
     <br>
     <div id="comment-button" >
         Show or Add Comments
     </div>
+    
 
 </div>
 <!-- /POST -->
@@ -507,8 +516,22 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
     <!-- SCRIPTS -->
     <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
     <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
     <script type="text/javascript">
+        MathJax.Hub.Config({
+            jax: ["input/TeX", "output/HTML-CSS"],
+            displayAlign: "left",
+            displayIndent: "1.2em",
+            CommonHTML: {
+                scale: 100,
+            },
+            TeX: {
+                equationNumbers: {
+                    autoNumber: "AMS"
+                }
+            }
+        });
+
         $(document).ready(function () {
             $(".post-content p img, .post-content figure img")
                 .colorbox({

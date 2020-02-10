@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Are your models calibrated? &laquo; Searching Gradients</title>
+
+    <!-- meta data -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+
+    
+    <meta name="description" content="Searching Gradients is a research blog focused on visual search, computer vision, and deep learning. Written by Huy Nguyen." />
+    
+
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@huyng" />
+    <meta name="twitter:creator" content="@huyng" />
+    <meta property="og:url" content="https://blog.everyhue.me/posts/multiclass-calibration/" />
+    <meta property="og:title" content="Are your models calibrated?" />
+    <meta property='og:site_name' content='Searching Gradients'/>
+
+    
+
+    <link rel="canonical" href="https://blog.everyhue.me/posts/multiclass-calibration/" />
+    <link rel="alternate" type="application/rss+xml" href="https://blog.everyhue.me/atom.xml" />
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+
+    <!-- stylesheets -->
+    <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/monokai.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css" type="text/css" media="screen" charset="utf-8">
+
+    <!-- fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Lora:400,700|Rock+Salt&display=swap" rel="stylesheet">
+    <link href="https://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-140409395-3"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'UA-140409395-3');
+    </script>
+
+</head>
+
+<body>
+    <div class="container">
+
+
+        <br>
+        <div class="site-title"><a href="/">Searching Gradients</a></div>
+        <br>
+        <div id="nav-container">
+            <ul class="nav" style="width:100%;">
+                <li><a href="/">
+                        posts</a></li>
+                <li><a href="https://everyhue.me/">
+                        about</a></li>
+                <li class="social-media-nav">
+                    <a id="twitter" href="http://twitter.com/huyng">
+                        twitter
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="github" href="https://github.com/huyng">
+                        github
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="rss" href="https://blog.everyhue.me/atom.xml">
+                        rss
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <br>
+    <hr>
+    <div class="container">
+        <div id="content-container">
+            <!-- POST -->
+
+
+<!-- <div class="header-rule"></div> -->
+<div class="post content">
+    
+    <div class="post-date">
+        08 Feb 2019 &nbsp; &ndash; &nbsp; <a style="color:#888" href="https://everyhue.me">Huy Nguyen</a>
+    </div>
+    <br>
+    <h2 class="post-title"><a href="/posts/multiclass-calibration/">Are your models calibrated?</a></h2>
+    <div class="post-content">
+    <p>A calibration curve (sometimes called a “reliability diagram”) tells you whether your model’s predicted probabilities accurately reflect the real chance of your model being right.</p>
+
+<p>It’s very common for neural networks to <a href="https://arxiv.org/abs/1706.04599">overestimate</a> the confidence in their predictions, and this type of diagram helps us detect when this phenomenon occurs. Here’s an example:</p>
+
+<p><img src="/media/3018/deterministic_classification.svg" style="box-sizing: border-box; padding: 1em 2em ; width:100%;" /></p>
+
+<p>On the x-axis we have our model’s predicted confidence. On the y-axis we plot the model accuracy given its predicted confidence. We can see from this particular diagram that the model is “overconfident” when it makes a prediction in the range between <code class="highlighter-rouge">0.5</code> to <code class="highlighter-rouge">0.7</code>.</p>
+
+<h3 id="calibration-curves-for-multiclass-classifiers">Calibration curves for multiclass classifiers</h3>
+
+<p>Scikit learn provides a <a href="https://scikit-learn.org/stable/modules/generated/sklearn.calibration.calibration_curve.html">function</a> to compute calibration curves for binary classification problems. However, in many cases we want to obtain the calibration curve for a model that makes predictions for more than 2 classes.</p>
+
+<p>We can look to <a href="https://arxiv.org/abs/1706.04599">Guo et al.</a> to see how <em>they</em> generate their calibration curve plots.</p>
+
+<p>They propose “binning” all predicted confidences into <script type="math/tex">M</script> equally wide bins. Where <script type="math/tex">B_m</script> is the bin containing the set of indices of samples that fall into interval <script type="math/tex">I_m = (\frac{m-1}{M}, \frac{m}{M}]</script>.</p>
+
+<p>For each bin we can compute the bin accuracy (which is the y-axis on our graph) using the following formula:</p>
+
+<script type="math/tex; mode=display">acc(B_m) = \frac{1}{\vert B_m \vert} \sum_{i \in B_m}{\unicode{x1D7D9}(\hat{y}_i = y_i)}</script>
+
+<p>Here, <script type="math/tex">\unicode{x1D7D9}(\hat{y}_i = y_i)</script> is <script type="math/tex">1</script> if the example label <script type="math/tex">y_i</script> belongs to the same class as the prediction <script type="math/tex">\hat{y}_i</script>, and <script type="math/tex">0</script> otherwise.</p>
+
+<p>To sum up, we compute the y-axis of our plot by first segmenting all predicted confidence scores into M bins. Each of these prediction scores are associated to a class <script type="math/tex">c</script>. For each bin, we count the number of examples whose labels match the class <script type="math/tex">c</script> associated to our predicted score and divide by the total count of items in the bin.</p>
+
+<h3 id="code">Code</h3>
+
+<p>Here is the code to compute and plot the calibration curves for your models in matplotlib.</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="k">def</span> <span class="nf">multiclass_calibration_curve</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+    <span class="s">'''
+    Args:
+        probs (ndarray):
+            NxM predicted probabilities for N examples and M classes.
+        labels (ndarray):
+            Vector of size N where each entry is an integer class label.
+        bins (int):
+            Number of bins to divide the prediction probabilities into.
+    Returns:
+        midpoints (ndarray):
+            Midpoint value of each bin
+        accuracies (ndarray):
+            Fraction of examples that are positive in bin
+        mean_confidences:
+            Average predicted confidences in each bin
+    '''</span>
+    <span class="n">step_size</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">bins</span>
+    <span class="n">n_classes</span> <span class="o">=</span> <span class="n">probs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">labels_ohe</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_classes</span><span class="p">)[</span><span class="n">labels</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)]</span>
+
+    <span class="n">midpoints</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">mean_confidences</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">accuracies</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bins</span><span class="p">):</span>
+        <span class="n">beg</span> <span class="o">=</span> <span class="n">i</span> <span class="o">*</span> <span class="n">step_size</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">step_size</span>
+
+        <span class="n">bin_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">probs</span> <span class="o">&gt;=</span> <span class="n">beg</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">probs</span> <span class="o">&lt;</span> <span class="n">end</span><span class="p">)</span>
+        <span class="n">bin_cnt</span> <span class="o">=</span> <span class="n">bin_mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="nb">sum</span><span class="p">()</span>
+        <span class="n">bin_confs</span> <span class="o">=</span> <span class="n">probs</span><span class="p">[</span><span class="n">bin_mask</span><span class="p">]</span>
+        <span class="n">bin_acc</span> <span class="o">=</span> <span class="n">labels_ohe</span><span class="p">[</span><span class="n">bin_mask</span><span class="p">]</span><span class="o">.</span><span class="nb">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">bin_cnt</span>
+
+        <span class="n">midpoints</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">beg</span><span class="o">+</span><span class="n">end</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span>
+        <span class="n">mean_confidences</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">bin_confs</span><span class="p">))</span>
+        <span class="n">accuracies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bin_acc</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">midpoints</span><span class="p">,</span> <span class="n">accuracies</span><span class="p">,</span> <span class="n">mean_confidences</span>
+
+<span class="k">def</span> <span class="nf">plot_multiclass_calibration_curve</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="s">'''
+    Plot calibration curve
+    '''</span>
+    <span class="n">title</span> <span class="o">=</span> <span class="s">'Reliability Diagram'</span> <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">title</span>
+    <span class="n">midpoints</span><span class="p">,</span> <span class="n">accuracies</span><span class="p">,</span> <span class="n">mean_confidences</span> <span class="o">=</span> <span class="n">multiclass_calibration_curve</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">midpoints</span><span class="p">,</span> <span class="n">accuracies</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">1.0</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">bins</span><span class="p">),</span> <span class="n">align</span><span class="o">=</span><span class="s">'center'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ec</span><span class="o">=</span><span class="s">'#000000'</span><span class="p">,</span> <span class="n">fc</span><span class="o">=</span><span class="s">'#2233aa'</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">'Model'</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">midpoints</span><span class="p">,</span> <span class="n">accuracies</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ec</span><span class="o">=</span><span class="s">'black'</span><span class="p">,</span> <span class="n">fc</span><span class="o">=</span><span class="s">"#ffffff"</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="s">'--'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">.7</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">'gray'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">'Perfectly calibrated'</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">'</span><span class="se">\n</span><span class="s">confidence'</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">'accuracy</span><span class="se">\n</span><span class="s">'</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">title</span><span class="o">+</span><span class="s">'</span><span class="se">\n</span><span class="s">'</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">midpoints</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=-</span><span class="mi">45</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s">'upper left'</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">midpoints</span><span class="p">,</span> <span class="n">accuracies</span><span class="p">,</span> <span class="n">mean_confidences</span></code></pre></figure>
+
+<h3 id="references">References</h3>
+
+<ol>
+  <li><a href="http://people.cs.pitt.edu/~milos/research/AAAI_Calibration.pdf">Obtaining Well Calibrated Probabilities Using Bayesian Binning</a></li>
+  <li><a href="https://arxiv.org/abs/1706.04599">On Calibration of Modern Neural Networks</a></li>
+  <li><a href="https://scikit-learn.org/stable/modules/generated/sklearn.calibration.calibration_curve.html">Scikit Learn Calibration Curve</a></li>
+</ol>
+
+
+    </div>
+
+    <br>
+    <br>
+
+    <div class="pitch">
+        <div style="float:left; margin-right: 2em;">
+            <img style="border-radius: 50px;" src="/static/images/author.jpg" width=96 alt="">
+        </div>
+        Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="https://blog.everyhue.me/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
+    </div>
+
+    <br>
+    <br>
+    <br>
+
+    <!-- related posts -->
+    
+    <br> <br>
+
+<!-- </div> -->
+
+
+
+<div class="post-content">
+
+
+    <div id="comments" style="display: none;">
+        <h3>Discussion</h3>
+
+        <!-- discussion -->
+        
+
+        
+        <br>
+        <br>
+    </div>
+
+    
+
+</div>
+<!-- /POST -->
+        </div>
+        <div class="clear"></div>
+        <br>
+        <br>
+    </div>
+
+
+    <!-- SCRIPTS -->
+    <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
+    <script type="text/javascript">
+        MathJax.Hub.Config({
+            jax: ["input/TeX", "output/HTML-CSS"],
+            displayAlign: "left",
+            displayIndent: "1.2em",
+            CommonHTML: {
+                scale: 100,
+            },
+            TeX: {
+                equationNumbers: {
+                    autoNumber: "AMS"
+                }
+            }
+        });
+
+        $(document).ready(function () {
+            $(".post-content p img, .post-content figure img")
+                .colorbox({
+                    // no transition
+                    transition: "none",
+
+                    // use image src as href
+                    href: function () {
+                        return this.getAttribute('src');
+                    },
+
+                    title: function () {
+                        return this.getAttribute('alt');
+                    },
+
+                    // slightly dark bg
+                    opacity: 1,
+
+                    // set max widths x height
+                    scalePhotos: true,
+                    maxWidth: "85%",
+                    maxHeight: "80%",
+
+                    // make it so overlay is fixed
+                    fixed: true,
+
+                    // group photos in posts
+                    rel: "gallery"
+                });
+            $('#comment-button').click(function() {
+                callDisqus();
+                $('#comments').fadeIn();
+                $('#comment-button').hide();
+            });
+        });
+    </script>
+
+    <!-- page specific scripts -->
+    
+
+    
+</body>
+
+
+</html>

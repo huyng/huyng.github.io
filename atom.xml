@@ -4,7 +4,7 @@
  <title>Searching Gradients with Huy Nguyen</title>
  <link href="http://blog.everyhue.me/atom.xml" rel="self"/>
  <link href="http://blog.everyhue.me/"/>
- <updated>2020-02-07T18:55:04-08:00</updated>
+ <updated>2020-02-10T12:30:03-08:00</updated>
  <id>http://blog.everyhue.me/</id>
  <author>
    <name>Huy Nguyen</name>
@@ -199,15 +199,21 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
 
 &lt;p&gt;If we are performing MC Dropout, to get a final prediction &lt;script type=&quot;math/tex&quot;&gt;\mathbf{\hat{y}}_\ast&lt;/script&gt; , we can average the predicted softmax probabilities  over &lt;script type=&quot;math/tex&quot;&gt;T&lt;/script&gt; stochastic forward passes of the data &lt;script type=&quot;math/tex&quot;&gt;\mathbf{x}&lt;/script&gt; through our network &lt;script type=&quot;math/tex&quot;&gt;\mathbf{f}_{\theta}(\mathbf{x}; \mathbf{w}_t)&lt;/script&gt; by sampling random dropout mask &lt;script type=&quot;math/tex&quot;&gt;\mathbf{w}_t&lt;/script&gt; for each pass:&lt;/p&gt;
 
-&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathbf{\hat{y}}_t = \mathit{Softmax}(\mathbf{f}_{\theta}(\mathbf{x}; \mathbf{w}_t))&lt;/script&gt;
+&lt;p&gt;\begin{equation}
+    \mathbf{\hat{y}}_t = \mathit{Softmax}(\mathbf{f}_{\theta}(\mathbf{x}; \mathbf{w}_t))
+\end{equation}&lt;/p&gt;
 
-&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathbf{\hat{y}}_\ast = \frac{1}{T} \sum_{t}{\mathbf{\hat{y}}_t}&lt;/script&gt;
+&lt;p&gt;\begin{equation}
+    \mathbf{\hat{y}}_\ast = \frac{1}{T} \sum_{t}{\mathbf{\hat{y}}_t} $$
+\end{equation}&lt;/p&gt;
 
 &lt;p&gt;If we’re using Model Ensembling, rather than performing &lt;script type=&quot;math/tex&quot;&gt;T&lt;/script&gt; forward passes through a single network with randomly sampled &lt;script type=&quot;math/tex&quot;&gt;\mathbf{w}_t&lt;/script&gt; dropout masks, we instead get our predictions from &lt;script type=&quot;math/tex&quot;&gt;M&lt;/script&gt; trained models whose parameters &lt;script type=&quot;math/tex&quot;&gt;\mathbf{\theta}_m&lt;/script&gt; are initialized to random starting points. Everything else stays the same.&lt;/p&gt;
 
 &lt;p&gt;We measure the uncertainty of our probabilistic prediction &lt;script type=&quot;math/tex&quot;&gt;\mathbf{\hat{y}_\ast}&lt;/script&gt; by computing its Entropy over its vector elements &lt;script type=&quot;math/tex&quot;&gt;\hat{y}_{\ast,c}&lt;/script&gt; :&lt;/p&gt;
 
-&lt;script type=&quot;math/tex; mode=display&quot;&gt;H(\mathbf{\hat{y}_\ast}) = - \sum_c^C \hat{y}_{*,i} * {\log{\hat{y}_{\ast,c}}}&lt;/script&gt;
+&lt;p&gt;\begin{equation}
+    H(\mathbf{\hat{y}_\ast}) = - \sum_c^C \hat{y}_{*,i} * {\log{\hat{y}_{\ast,c}}}
+\end{equation}&lt;/p&gt;
 
 &lt;h4 id=&quot;sample-code&quot;&gt;Sample code&lt;/h4&gt;
 
@@ -355,6 +361,115 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
   &lt;li&gt;&lt;a href=&quot;https://www.ntsb.gov/news/events/Pages/2019-HWY18MH010-BMG.aspx&quot;&gt;Collision Between Vehicle Controlled by Developmental Automated Driving System and Pedestrian&lt;/a&gt;&lt;/li&gt;
   &lt;li&gt;&lt;a href=&quot;https://www.ntsb.gov/news/events/Pages/2019-HWY18MH010-BMG.aspx&quot;&gt;Fukushima: The Failure of Predictive Models&lt;/a&gt;&lt;/li&gt;
   &lt;li&gt;&lt;a href=&quot;https://www.wired.com/story/when-it-comes-to-gorillas-google-photos-remains-blind/&quot;&gt;When It Comes to Gorillas, Google Photos Remains Blind&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+</content>
+
+ </entry>
+ 
+ <entry>
+   <title>Are your models calibrated?</title>
+   <link href="http://blog.everyhue.me/posts/multiclass-calibration/"/>
+   <updated>2019-02-08T00:00:00-08:00</updated>
+   <id>http://blog.everyhue.me/posts/multiclass-calibration</id>
+   
+
+   <content type="html">&lt;p&gt;A calibration curve (sometimes called a “reliability diagram”) tells you whether your model’s predicted probabilities accurately reflect the real chance of your model being right.&lt;/p&gt;
+
+&lt;p&gt;It’s very common for neural networks to &lt;a href=&quot;https://arxiv.org/abs/1706.04599&quot;&gt;overestimate&lt;/a&gt; the confidence in their predictions, and this type of diagram helps us detect when this phenomenon occurs. Here’s an example:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/media/3018/deterministic_classification.svg&quot; style=&quot;box-sizing: border-box; padding: 1em 2em ; width:100%;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;On the x-axis we have our model’s predicted confidence. On the y-axis we plot the model accuracy given its predicted confidence. We can see from this particular diagram that the model is “overconfident” when it makes a prediction in the range between &lt;code class=&quot;highlighter-rouge&quot;&gt;0.5&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;0.7&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;calibration-curves-for-multiclass-classifiers&quot;&gt;Calibration curves for multiclass classifiers&lt;/h3&gt;
+
+&lt;p&gt;Scikit learn provides a &lt;a href=&quot;https://scikit-learn.org/stable/modules/generated/sklearn.calibration.calibration_curve.html&quot;&gt;function&lt;/a&gt; to compute calibration curves for binary classification problems. However, in many cases we want to obtain the calibration curve for a model that makes predictions for more than 2 classes.&lt;/p&gt;
+
+&lt;p&gt;We can look to &lt;a href=&quot;https://arxiv.org/abs/1706.04599&quot;&gt;Guo et al.&lt;/a&gt; to see how &lt;em&gt;they&lt;/em&gt; generate their calibration curve plots.&lt;/p&gt;
+
+&lt;p&gt;They propose “binning” all predicted confidences into &lt;script type=&quot;math/tex&quot;&gt;M&lt;/script&gt; equally wide bins. Where &lt;script type=&quot;math/tex&quot;&gt;B_m&lt;/script&gt; is the bin containing the set of indices of samples that fall into interval &lt;script type=&quot;math/tex&quot;&gt;I_m = (\frac{m-1}{M}, \frac{m}{M}]&lt;/script&gt;.&lt;/p&gt;
+
+&lt;p&gt;For each bin we can compute the bin accuracy (which is the y-axis on our graph) using the following formula:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;acc(B_m) = \frac{1}{\vert B_m \vert} \sum_{i \in B_m}{\unicode{x1D7D9}(\hat{y}_i = y_i)}&lt;/script&gt;
+
+&lt;p&gt;Here, &lt;script type=&quot;math/tex&quot;&gt;\unicode{x1D7D9}(\hat{y}_i = y_i)&lt;/script&gt; is &lt;script type=&quot;math/tex&quot;&gt;1&lt;/script&gt; if the example label &lt;script type=&quot;math/tex&quot;&gt;y_i&lt;/script&gt; belongs to the same class as the prediction &lt;script type=&quot;math/tex&quot;&gt;\hat{y}_i&lt;/script&gt;, and &lt;script type=&quot;math/tex&quot;&gt;0&lt;/script&gt; otherwise.&lt;/p&gt;
+
+&lt;p&gt;To sum up, we compute the y-axis of our plot by first segmenting all predicted confidence scores into M bins. Each of these prediction scores are associated to a class &lt;script type=&quot;math/tex&quot;&gt;c&lt;/script&gt;. For each bin, we count the number of examples whose labels match the class &lt;script type=&quot;math/tex&quot;&gt;c&lt;/script&gt; associated to our predicted score and divide by the total count of items in the bin.&lt;/p&gt;
+
+&lt;h3 id=&quot;code&quot;&gt;Code&lt;/h3&gt;
+
+&lt;p&gt;Here is the code to compute and plot the calibration curves for your models in matplotlib.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;numpy&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;matplotlib.pyplot&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;multiclass_calibration_curve&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;probs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;labels&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bins&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;'''
+    Args:
+        probs (ndarray):
+            NxM predicted probabilities for N examples and M classes.
+        labels (ndarray):
+            Vector of size N where each entry is an integer class label.
+        bins (int):
+            Number of bins to divide the prediction probabilities into.
+    Returns:
+        midpoints (ndarray):
+            Midpoint value of each bin
+        accuracies (ndarray):
+            Fraction of examples that are positive in bin
+        mean_confidences:
+            Average predicted confidences in each bin
+    '''&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;step_size&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bins&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;n_classes&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;probs&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;shape&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;labels_ohe&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eye&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n_classes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;labels&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;astype&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;int64&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)]&lt;/span&gt;
+
+    &lt;span class=&quot;n&quot;&gt;midpoints&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;mean_confidences&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;accuracies&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;range&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bins&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;beg&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;step_size&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;end&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;step_size&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;bin_mask&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;probs&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;beg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;probs&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;end&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;bin_cnt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bin_mask&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;astype&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;float32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;bin_confs&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;probs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bin_mask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;bin_acc&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;labels_ohe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bin_mask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;sum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bin_cnt&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;midpoints&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;beg&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;end&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;2.&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;mean_confidences&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mean&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bin_confs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;accuracies&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bin_acc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;midpoints&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;accuracies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mean_confidences&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;plot_multiclass_calibration_curve&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;probs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;labels&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bins&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;'''
+    Plot calibration curve
+    '''&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;title&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'Reliability Diagram'&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;title&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;is&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;title&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;midpoints&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;accuracies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mean_confidences&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;multiclass_calibration_curve&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;probs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;labels&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bins&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bins&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bar&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;midpoints&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;accuracies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;1.0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bins&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;align&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'center'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lw&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ec&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'#000000'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'#2233aa'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;alpha&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;label&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'Model'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;zorder&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;scatter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;midpoints&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;accuracies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lw&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ec&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'black'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;#ffffff&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;zorder&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plot&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;linspace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;20&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;linspace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;20&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'--'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lw&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;alpha&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;.7&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'gray'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;label&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'Perfectly calibrated'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;zorder&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xlim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;0.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ylim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;0.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xlabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;confidence'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ylabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'accuracy&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xticks&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;midpoints&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rotation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;legend&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'upper left'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tight_layout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;midpoints&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;accuracies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mean_confidences&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h3 id=&quot;references&quot;&gt;References&lt;/h3&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;http://people.cs.pitt.edu/~milos/research/AAAI_Calibration.pdf&quot;&gt;Obtaining Well Calibrated Probabilities Using Bayesian Binning&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://arxiv.org/abs/1706.04599&quot;&gt;On Calibration of Modern Neural Networks&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://scikit-learn.org/stable/modules/generated/sklearn.calibration.calibration_curve.html&quot;&gt;Scikit Learn Calibration Curve&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;
 
 </content>
@@ -1176,39 +1291,6 @@ point in time.&lt;/p&gt;
 &lt;img alt=&quot;line plot&quot; src=&quot;http://imgur.com/kjVuA.png&quot; /&gt;
 &lt;img alt=&quot;time series&quot; src=&quot;http://imgur.com/Idqs4.png&quot; /&gt;
 &lt;img alt=&quot;histogram&quot; src=&quot;http://imgur.com/Z0GWx.png&quot; /&gt;&lt;/p&gt;
-</content>
-
- </entry>
- 
- <entry>
-   <title>Gathering Leads using MTurk</title>
-   <link href="http://blog.everyhue.me/posts/gathering-leads-using-mturk/"/>
-   <updated>2010-06-13T00:00:00-07:00</updated>
-   <id>http://blog.everyhue.me/posts/gathering-leads-using-mturk</id>
-   
-   <category term="crowdsourcing" />
-   
-   <category term="python" />
-   
-   <category term="programming" />
-   
-
-   <content type="html">&lt;!-- End Meta --&gt;
-&lt;p&gt;I want to share a technique with you that I have been using to streamline my &lt;a href=&quot;http://steveblank.com/category/customer-development/&quot;&gt;customer development&lt;/a&gt; process. It's experimental, but so far it's saving me a lot of time and producing good results. &lt;/p&gt;
-&lt;p&gt;At the core, my technique involves using MTurk to collect targeted leads for some business ideas that have been brewing in my head. By using MTurk I was able to gather contact information from a huge list of websites in a very little amount of time. Sure, I could've written a scraper to find emails on most of these sites, but after weighing the cost/benefit ratio, I figured it just wasn't worth my time.&lt;/p&gt;
-&lt;!--more--&gt;
-&lt;h3&gt;The Task&lt;/h3&gt;
-&lt;p&gt;To give you some context, I had a list of around 2000 urls pointing to local chamber of commerce sites scattered across the United States. Quite a few of my business ideas involve these organizations, so I wanted to &lt;a href=&quot;http://steveblank.com/category/customer-development/&quot;&gt;validate&lt;/a&gt;/gauge interest by sending out targeted email inquiries to each organization's leader. &lt;/p&gt;
-&lt;p&gt;For those of you unfamiliar with MTurk, it is a crowd-sourcing service from Amazon that allows you to submit small, well-defined tasks to thousands of people around the world. You basically construct a HTML form with a special templating syntax and then submit a CSV file that will populate into that form when Amazon displays it to their crowd of workers. &lt;/p&gt;
-&lt;p&gt;You can see a sample of the task that I created below. &lt;/p&gt;
-&lt;p&gt;&lt;img alt=&quot;mturk preview&quot; src=&quot;/media/3000/mturk_preview.png&quot; /&gt;&lt;/p&gt;
-&lt;p&gt;Aside: I generated the above form using &lt;a href=&quot;http://shpaml.webfactional.com/&quot;&gt;Shpaml&lt;/a&gt; which I highly recommend for writing short-hand HTML. It significantly cut down on my typing and development time.&lt;/p&gt;
-&lt;h3&gt;The Results&lt;/h3&gt;
-&lt;p&gt;I ran a test trial using 100 urls. The task was set up so that every url would be sent to at least 3 workers. In total, 300 turkers worked on my task. On Sunday morning I had submitted the task to Amazon Mturk. When I came back 4 hours later, it was already completed! Although there were a few spammers, the overall quality was great for what I was trying to achieve. Check out a small sample of &lt;a href=&quot;http://www.huyng.com/wp-content/uploads/mtruk_results.csv_.zip&quot;&gt;my mturk results&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;Out of the batch of 300, fourty of the answers came from spammers. I know that 13 percent sounds like a lot! However, since I had 3 workers work on each URL, I quickly filtered out the spam by accepting only the answers where two or more mturkers intersected.&lt;/p&gt;
-
-&lt;script&gt;utmx_section(&quot;emailme&quot;)&lt;/script&gt;
-&lt;p&gt;For those of you trying to capture the local marketplace, or even if you're just interested in getting this data, send me a &lt;a href=&quot;/about/&quot;&gt;quick email&lt;/a&gt;! I will be running through the rest of my batch in the upcoming days.&lt;/p&gt;&lt;/noscript&gt;
 </content>
 
  </entry>
