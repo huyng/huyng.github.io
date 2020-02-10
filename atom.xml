@@ -4,7 +4,7 @@
  <title>Searching Gradients with Huy Nguyen</title>
  <link href="http://blog.everyhue.me/atom.xml" rel="self"/>
  <link href="http://blog.everyhue.me/"/>
- <updated>2020-02-10T12:30:03-08:00</updated>
+ <updated>2020-02-10T13:57:46-08:00</updated>
  <id>http://blog.everyhue.me/</id>
  <author>
    <name>Huy Nguyen</name>
@@ -204,7 +204,7 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
 \end{equation}&lt;/p&gt;
 
 &lt;p&gt;\begin{equation}
-    \mathbf{\hat{y}}_\ast = \frac{1}{T} \sum_{t}{\mathbf{\hat{y}}_t} $$
+    \mathbf{\hat{y}}_\ast = \frac{1}{T} \sum_{t}{\mathbf{\hat{y}}_t}
 \end{equation}&lt;/p&gt;
 
 &lt;p&gt;If we’re using Model Ensembling, rather than performing &lt;script type=&quot;math/tex&quot;&gt;T&lt;/script&gt; forward passes through a single network with randomly sampled &lt;script type=&quot;math/tex&quot;&gt;\mathbf{w}_t&lt;/script&gt; dropout masks, we instead get our predictions from &lt;script type=&quot;math/tex&quot;&gt;M&lt;/script&gt; trained models whose parameters &lt;script type=&quot;math/tex&quot;&gt;\mathbf{\theta}_m&lt;/script&gt; are initialized to random starting points. Everything else stays the same.&lt;/p&gt;
