@@ -1,0 +1,102 @@
+<html>
+
+<head>
+
+    <style>
+        * {
+            margin: 0,
+            padding: 0,
+        }
+
+        body {
+            background: black;
+            font-size: 16px;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        #editor {
+            position:absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 50vw;
+        }
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 50vw;
+            padding-top: 5em;
+            background-color: white;;
+            text-align: center;
+        }
+        #canvas svg {
+            border: 3px solid #ccc;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div id="canvas">
+
+    </div>
+    <div id="editor">// https://svgjs.com/docs/3.0/manipulating/
+var cnv = SVG().addTo('#canvas')
+        .size(800, 400)
+        .css('padding', '20px')
+for (const i of Array(10).keys()) {
+    for (const j of Array(10).keys())  {
+        var rect = cnv.rect(20, 20).attr({fill: '#f06' }).move(i*30, j*30)
+        var circ = cnv.circle(10).attr({fill: '#fff'}).cx(i*30+10).cy(j*30+10)
+        circ.animate({
+          duration: 2000,
+          delay: 1000,
+          when: 'now',
+          swing: true,
+          times: 5,
+          wait: 200
+        }).translate(10,10);
+    }
+}</div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.7/ace.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.15.0/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.0.13/svg.min.js"></script>
+    <script>
+        ace.require("ace/ext/language_tools");
+
+        var editor = ace.edit("editor");
+        editor.setTheme("ace/theme/cobalt");
+        editor.session.setMode("ace/mode/javascript");
+        editor.setKeyboardHandler("ace/keyboard/vim");
+        editor.setOptions({
+            enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: false
+        });
+        editor.commands.addCommand({
+            name: 'save',
+            bindKey: { win: "Ctrl-S", "mac": "Cmd-S" },
+            exec: function (editor) {
+                var value = editor.session.getValue();
+                var node = document.getElementById("canvas");
+                while (node.firstChild) {
+                    node.removeChild(node.firstChild);
+                }
+                try {
+                    eval(value);
+                    console.log("rendering", value)
+                } catch (error) {
+                    console.log("error", value)
+                }
+            }
+        });
+    </script>
+
+</body>
+
+</html>
