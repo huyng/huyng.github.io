@@ -363,6 +363,10 @@ div.related-post-title {
     font-family: "Lora", "Georgia", serif;
 }
 
+.post-content.modern {
+    font-family: inherit;
+}
+
 .post-content img {
     cursor: pointer;
     max-width:100%;
