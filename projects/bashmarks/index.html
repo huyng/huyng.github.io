@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Bashmarks - directory bookmarks for the shell &laquo; Searching Gradients</title>
+
+    <!-- meta data -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+
+    
+    <meta name="description" content="Searching Gradients is a research blog focused on visual search, computer vision, and deep learning. Written by Huy Nguyen." />
+    
+
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@huyng" />
+    <meta name="twitter:creator" content="@huyng" />
+    <meta property="og:url" content="https://blog.everyhue.me/projects/bashmarks/" />
+    <meta property="og:title" content="Bashmarks - directory bookmarks for the shell" />
+    <meta property='og:site_name' content='Searching Gradients'/>
+
+    
+
+    <link rel="canonical" href="https://blog.everyhue.me/projects/bashmarks/" />
+    <link rel="alternate" type="application/rss+xml" href="https://blog.everyhue.me/atom.xml" />
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+
+    <!-- stylesheets -->
+    <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/monokai.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css" type="text/css" media="screen" charset="utf-8">
+
+    <!-- fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Lora:400,700|Rock+Salt&display=swap" rel="stylesheet">
+    <link href="https://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-140409395-3"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'UA-140409395-3');
+    </script>
+
+</head>
+
+<body>
+    <div class="container">
+
+
+        <br>
+        <div class="site-title"><a href="/">Searching Gradients</a></div>
+        <br>
+        <div id="nav-container">
+            <ul class="nav" style="width:100%;">
+                <li><a href="/">posts</a></li>
+                <li><a href="/about/">about</a></li>
+                <li><a href="/projects/">projects</a></li>
+                <li class="social-media-nav">
+                    <a id="twitter" href="http://twitter.com/huyng">
+                        twitter
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="github" href="https://github.com/huyng">
+                        github
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="rss" href="https://blog.everyhue.me/atom.xml">
+                        rss
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <br>
+    <hr>
+    <div class="container">
+        <div id="content-container">
+            <!-- <div class="header-rule"></div> -->
+
+<div class="content">
+    
+    <h2 class="post-title"><a href="/projects/bashmarks/">Bashmarks - directory bookmarks for the shell</a></h2>
+    <div class="post-content modern">
+        <p>Bashmarks is a commandline utility that allows you to save and jump to commonly used directories.</p>
+
+<p><a href="https://github.com/huyng/bashmarks">github repository</a></p>
+
+<h4 id="installation">installation</h4>
+
+<ol>
+  <li><code class="highlighter-rouge">git clone git://github.com/huyng/bashmarks.git</code></li>
+  <li><code class="highlighter-rouge">cd bashmarks &amp;&amp; make install</code></li>
+  <li>add <code class="highlighter-rouge">source ~/.local/bin/bashmarks.sh</code> from within your ~.bash_profile or ~/.bashrc file</li>
+</ol>
+
+<h4 id="shell-commands">shell commands</h4>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>s &lt;bookmark_name&gt; - Saves the current directory as "bookmark_name"
+g &lt;bookmark_name&gt; - Goes (cd) to the directory associated with "bookmark_name"
+p &lt;bookmark_name&gt; - Prints the directory associated with "bookmark_name"
+d &lt;bookmark_name&gt; - Deletes the bookmark
+l                 - Lists all available bookmarks
+</code></pre></div></div>
+
+<h4 id="example-usage">example usage</h4>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cd /var/www/
+$ s webfolder
+$ cd /usr/local/lib/
+$ s locallib
+$ l
+$ g web&lt;tab&gt;
+$ g webfolder
+</code></pre></div></div>
+
+<h4 id="where-bashmarks-are-stored">where bashmarks are stored</h4>
+
+<p>All of your directory bookmarks are saved in a file called “.sdirs” in your HOME directory.</p>
+
+    </div>
+</div>
+
+<!-- /POST -->
+        </div>
+        <div class="clear"></div>
+        <br>
+        <br>
+    </div>
+
+
+    <!-- SCRIPTS -->
+    <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
+    <script type="text/javascript">
+        MathJax.Hub.Config({
+            jax: ["input/TeX", "output/HTML-CSS"],
+            displayAlign: "left",
+            displayIndent: "1.2em",
+            CommonHTML: {
+                scale: 100,
+            },
+            TeX: {
+                equationNumbers: {
+                    autoNumber: "AMS"
+                }
+            }
+        });
+
+        $(document).ready(function () {
+            $(".post-content p img, .post-content figure img")
+                .colorbox({
+                    // no transition
+                    transition: "none",
+
+                    // use image src as href
+                    href: function () {
+                        return this.getAttribute('src');
+                    },
+
+                    title: function () {
+                        return this.getAttribute('alt');
+                    },
+
+                    // slightly dark bg
+                    opacity: 1,
+
+                    // set max widths x height
+                    scalePhotos: true,
+                    maxWidth: "85%",
+                    maxHeight: "80%",
+
+                    // make it so overlay is fixed
+                    fixed: true,
+
+                    // group photos in posts
+                    rel: "gallery"
+                });
+            $('#comment-button').click(function() {
+                callDisqus();
+                $('#comments').fadeIn();
+                $('#comment-button').hide();
+            });
+        });
+    </script>
+
+    <!-- page specific scripts -->
+    
+
+    
+</body>
+
+
+</html>

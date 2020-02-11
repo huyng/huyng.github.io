@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Projects &laquo; Searching Gradients</title>
+
+    <!-- meta data -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+
+    
+    <meta name="description" content="Searching Gradients is a research blog focused on visual search, computer vision, and deep learning. Written by Huy Nguyen." />
+    
+
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@huyng" />
+    <meta name="twitter:creator" content="@huyng" />
+    <meta property="og:url" content="https://blog.everyhue.me/projects/" />
+    <meta property="og:title" content="Projects" />
+    <meta property='og:site_name' content='Searching Gradients'/>
+
+    
+
+    <link rel="canonical" href="https://blog.everyhue.me/projects/" />
+    <link rel="alternate" type="application/rss+xml" href="https://blog.everyhue.me/atom.xml" />
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+
+    <!-- stylesheets -->
+    <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/styles/monokai.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css" type="text/css" media="screen" charset="utf-8">
+
+    <!-- fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Lora:400,700|Rock+Salt&display=swap" rel="stylesheet">
+    <link href="https://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-140409395-3"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'UA-140409395-3');
+    </script>
+
+</head>
+
+<body>
+    <div class="container">
+
+
+        <br>
+        <div class="site-title"><a href="/">Searching Gradients</a></div>
+        <br>
+        <div id="nav-container">
+            <ul class="nav" style="width:100%;">
+                <li><a href="/">posts</a></li>
+                <li><a href="/about/">about</a></li>
+                <li><a href="/projects/">projects</a></li>
+                <li class="social-media-nav">
+                    <a id="twitter" href="http://twitter.com/huyng">
+                        twitter
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="github" href="https://github.com/huyng">
+                        github
+                    </a>
+                </li>
+                <li class="social-media-nav">
+                    <a id="rss" href="https://blog.everyhue.me/atom.xml">
+                        rss
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <br>
+    <hr>
+    <div class="container">
+        <div id="content-container">
+            <!-- <div class="header-rule"></div> -->
+
+<div class="content">
+    
+    <h2 class="post-title"><a href="/projects/">Projects</a></h2>
+    <div class="post-content modern">
+        <p>A random assortment of various things I’ve worked on in the past.</p>
+
+<dl>
+    <dt><a href="https://github.com/huyng/pdrive">pDrive</a></dt>
+    <dd>A lightweight &amp; visually appealing alternative to Python's <code class="highlighter-rouge">http.server</code></dd>
+    <br />
+    <dt><a href="https://github.com/yahoo/Prototrain">Prototrain</a></dt>
+    <dd>Search ranking and metric learning framework used in visual search at Yahoo.</dd>
+    <br />
+    <dt><a href="https://github.com/huyng/lopq">LOPQ</a></dt>
+    <dd>A large scale approximate nearest neighbors search system. Enables vector search over billions of vectors in under 500ms. Used in Flickr visual search.</dd>
+    <br />
+    <dt><a href="https://github.com/huyng/datapad">Datapad</a></dt>
+    <dd>Sequence processing toolkit for exploratory data analysis</dd>
+    <br />
+    <dt><a href="https://github.com/huyng/graphkit">GraphKit</a></dt>
+    <dd>A graph computation framework for composing machine learning models.</dd>
+    <br />
+    <dt><a href="/projects/bashmarks/">bashmarks</a></dt>
+    <dd>Bashmarks is a shell script that allows you to save and jump to commonly used directories</dd>
+</dl>
+
+    </div>
+</div>
+
+<!-- /POST -->
+        </div>
+        <div class="clear"></div>
+        <br>
+        <br>
+    </div>
+
+
+    <!-- SCRIPTS -->
+    <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
+    <script type="text/javascript">
+        MathJax.Hub.Config({
+            jax: ["input/TeX", "output/HTML-CSS"],
+            displayAlign: "left",
+            displayIndent: "1.2em",
+            CommonHTML: {
+                scale: 100,
+            },
+            TeX: {
+                equationNumbers: {
+                    autoNumber: "AMS"
+                }
+            }
+        });
+
+        $(document).ready(function () {
+            $(".post-content p img, .post-content figure img")
+                .colorbox({
+                    // no transition
+                    transition: "none",
+
+                    // use image src as href
+                    href: function () {
+                        return this.getAttribute('src');
+                    },
+
+                    title: function () {
+                        return this.getAttribute('alt');
+                    },
+
+                    // slightly dark bg
+                    opacity: 1,
+
+                    // set max widths x height
+                    scalePhotos: true,
+                    maxWidth: "85%",
+                    maxHeight: "80%",
+
+                    // make it so overlay is fixed
+                    fixed: true,
+
+                    // group photos in posts
+                    rel: "gallery"
+                });
+            $('#comment-button').click(function() {
+                callDisqus();
+                $('#comments').fadeIn();
+                $('#comment-button').hide();
+            });
+        });
+    </script>
+
+    <!-- page specific scripts -->
+    
+
+    
+</body>
+
+
+</html>
