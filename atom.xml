@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
  <title>Searching Gradients with Huy Nguyen</title>
- <link href="http://blog.everyhue.me/atom.xml" rel="self"/>
- <link href="http://blog.everyhue.me/"/>
- <updated>2020-02-11T14:42:04-08:00</updated>
- <id>http://blog.everyhue.me/</id>
+ <link href="https://everyhue.meatom.xml" rel="self"/>
+ <link href="https://everyhue.me"/>
+ <updated>2020-02-12T06:31:02-08:00</updated>
+ <id>https://everyhue.me</id>
  <author>
    <name>Huy Nguyen</name>
  </author>
@@ -13,9 +13,9 @@
  
  <entry>
    <title>Why Uncertainty Matters in Deep Learning and How to Estimate It</title>
-   <link href="http://blog.everyhue.me/posts/why-uncertainty-matters/"/>
+   <link href="https://everyhue.me/posts/why-uncertainty-matters/"/>
    <updated>2020-01-20T00:00:00-08:00</updated>
-   <id>http://blog.everyhue.me/posts/why-uncertainty-matters</id>
+   <id>https://everyhue.me/posts/why-uncertainty-matters</id>
    
 
    <content type="html">&lt;ul id=&quot;markdown-toc&quot;&gt;
@@ -369,9 +369,9 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
  
  <entry>
    <title>Are your models calibrated?</title>
-   <link href="http://blog.everyhue.me/posts/multiclass-calibration/"/>
+   <link href="https://everyhue.me/posts/multiclass-calibration/"/>
    <updated>2019-02-08T00:00:00-08:00</updated>
-   <id>http://blog.everyhue.me/posts/multiclass-calibration</id>
+   <id>https://everyhue.me/posts/multiclass-calibration</id>
    
 
    <content type="html">&lt;p&gt;A calibration curve (sometimes called a “reliability diagram”) tells you whether your model’s predicted probabilities accurately reflect the real chance of your model being right.&lt;/p&gt;
@@ -478,9 +478,9 @@ For example, let's say you trained a *dogs* vs. *cats* image classifier using a 
  
  <entry>
    <title>Similarity search 101 - Part 2 (Fast retrieval with vp-trees)</title>
-   <link href="http://blog.everyhue.me/posts/similarity-search-101-with-vantage-point-trees/"/>
+   <link href="https://everyhue.me/posts/similarity-search-101-with-vantage-point-trees/"/>
    <updated>2014-03-26T00:00:00-07:00</updated>
-   <id>http://blog.everyhue.me/posts/similarity-search-101-with-vantage-point-trees</id>
+   <id>https://everyhue.me/posts/similarity-search-101-with-vantage-point-trees</id>
    
 
    <content type="html">&lt;blockquote&gt;
@@ -650,9 +650,9 @@ for Finding Similar Patches in Images?&lt;/a&gt;&lt;/p&gt;
  
  <entry>
    <title>Similarity search 101 - Part 1 (overview)</title>
-   <link href="http://blog.everyhue.me/posts/similarity-search-101-part-1/"/>
+   <link href="https://everyhue.me/posts/similarity-search-101-part-1/"/>
    <updated>2014-03-19T00:00:00-07:00</updated>
-   <id>http://blog.everyhue.me/posts/similarity-search-101-part-1</id>
+   <id>https://everyhue.me/posts/similarity-search-101-part-1</id>
    
 
    <content type="html">&lt;p&gt;In my work applying machine learning technologies, finding “similar” items is  one of the most common challenges that people come to my team with:&lt;/p&gt;
@@ -711,9 +711,9 @@ for Finding Similar Patches in Images?&lt;/a&gt;&lt;/p&gt;
  
  <entry>
    <title>Faster Numpy Dot Product for Multi-dimensional Arrays</title>
-   <link href="http://blog.everyhue.me/posts/faster-numpy-dot-product/"/>
+   <link href="https://everyhue.me/posts/faster-numpy-dot-product/"/>
    <updated>2013-12-14T00:00:00-08:00</updated>
-   <id>http://blog.everyhue.me/posts/faster-numpy-dot-product</id>
+   <id>https://everyhue.me/posts/faster-numpy-dot-product</id>
    
 
    <content type="html">&lt;p&gt;When installed and linked correctly against a blas implementation like ATLAS or
@@ -749,9 +749,9 @@ OpenBlas, numpy’s &lt;code class=&quot;highlighter-rouge&quot;&gt;dot&lt;/code
  
  <entry>
    <title>The JSON Streaming Record (JSRec) data format</title>
-   <link href="http://blog.everyhue.me/posts/json-streaming-record-data-format/"/>
+   <link href="https://everyhue.me/posts/json-streaming-record-data-format/"/>
    <updated>2013-10-30T00:00:00-07:00</updated>
-   <id>http://blog.everyhue.me/posts/json-streaming-record-data-format</id>
+   <id>https://everyhue.me/posts/json-streaming-record-data-format</id>
    
    <category term="programming" />
    
@@ -839,9 +839,9 @@ building those data processing pipelines.&lt;/p&gt;
  
  <entry>
    <title>A Guide to Analyzing Python Performance</title>
-   <link href="http://blog.everyhue.me/posts/python-performance-analysis/"/>
+   <link href="https://everyhue.me/posts/python-performance-analysis/"/>
    <updated>2013-09-03T00:00:00-07:00</updated>
-   <id>http://blog.everyhue.me/posts/python-performance-analysis</id>
+   <id>https://everyhue.me/posts/python-performance-analysis</id>
    
    <category term="programming" />
    
@@ -1192,9 +1192,9 @@ tuple                16969        +1
  
  <entry>
    <title>My Tmux Setup</title>
-   <link href="http://blog.everyhue.me/posts/my-tmux-setup/"/>
+   <link href="https://everyhue.me/posts/my-tmux-setup/"/>
    <updated>2013-08-21T00:00:00-07:00</updated>
-   <id>http://blog.everyhue.me/posts/my-tmux-setup</id>
+   <id>https://everyhue.me/posts/my-tmux-setup</id>
    
 
    <content type="html">&lt;p&gt;If you do a lot of context switching between projects, recreating your terminal
@@ -1271,9 +1271,9 @@ point in time.&lt;/p&gt;
  
  <entry>
    <title>GGPlot2 theme for Matplotlib</title>
-   <link href="http://blog.everyhue.me/posts/sane-color-scheme-for-matplotlib/"/>
+   <link href="https://everyhue.me/posts/sane-color-scheme-for-matplotlib/"/>
    <updated>2011-02-08T00:00:00-08:00</updated>
-   <id>http://blog.everyhue.me/posts/sane-color-scheme-for-matplotlib</id>
+   <id>https://everyhue.me/posts/sane-color-scheme-for-matplotlib</id>
    
    <category term="python" />
    
@@ -1297,9 +1297,9 @@ point in time.&lt;/p&gt;
  
  <entry>
    <title>Don't Hash Your Secrets</title>
-   <link href="http://blog.everyhue.me/posts/dont-hash-your-secrets-heres-why-in-python/"/>
+   <link href="https://everyhue.me/posts/dont-hash-your-secrets-heres-why-in-python/"/>
    <updated>2010-02-01T00:00:00-08:00</updated>
-   <id>http://blog.everyhue.me/posts/dont-hash-your-secrets-heres-why-in-python</id>
+   <id>https://everyhue.me/posts/dont-hash-your-secrets-heres-why-in-python</id>
    
    <category term="programming" />
    
@@ -1401,9 +1401,9 @@ Below, you'll find working &lt;a href=&quot;/media/3006/spoof_md5.py.txt&quot;&g
  
  <entry>
    <title>Bashmarks: Directory Bookmarks in the Shell</title>
-   <link href="http://blog.everyhue.me/posts/bashmarks-directory-bookmarks/"/>
+   <link href="https://everyhue.me/posts/bashmarks-directory-bookmarks/"/>
    <updated>2009-09-10T00:00:00-07:00</updated>
-   <id>http://blog.everyhue.me/posts/bashmarks-directory-bookmarks</id>
+   <id>https://everyhue.me/posts/bashmarks-directory-bookmarks</id>
    
    <category term="programming" />
    
@@ -1452,9 +1452,9 @@ g2='cd /etc/'&lt;/pre&gt;&lt;/div&gt;
  
  <entry>
    <title>Toward an Ergonomic Vim Setup</title>
-   <link href="http://blog.everyhue.me/posts/toward-an-ergonomic-vim-setup/"/>
+   <link href="https://everyhue.me/posts/toward-an-ergonomic-vim-setup/"/>
    <updated>2009-07-21T00:00:00-07:00</updated>
-   <id>http://blog.everyhue.me/posts/toward-an-ergonomic-vim-setup</id>
+   <id>https://everyhue.me/posts/toward-an-ergonomic-vim-setup</id>
    
    <category term="python" />
    
