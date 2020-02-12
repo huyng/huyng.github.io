@@ -291,7 +291,7 @@ div.post-content h3,
 div.post-content h4,
 div.post-content h5,
 div.post-content h6 {
-    margin-top: 1.5rem;
+    margin-top: 2rem;
 }
 
 /* images at the very top of posts*/
@@ -375,7 +375,7 @@ div.related-post-title {
 
 @media screen and (min-width: 800px) {
     body {
-        font-size: 15.5px;
+        font-size: 16px;
     }
     div.container {
         max-width: 50rem;
