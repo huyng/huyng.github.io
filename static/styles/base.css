@@ -298,7 +298,7 @@ div.post-content h6 {
 
 
 div.post-content figure.fig {
-    font-family: "Avenir", "Nunito Sans", "Helvetica", sans-serif;
+    font-family: "Avenir", "Helvetica Neue", "Helvetica", sans-serif;
     font-size: 1rem;
     color: rgba(5, 5, 38, .6);
     text-align: left;
@@ -313,7 +313,7 @@ div.post-content figure.fig img {
 }
 
 div.post-content figure.fig figcaption {
-    font-family: "Avenir", "Nunito Sans", "Helvetica", sans-serif;
+    font-family: "Avenir", "Helvetica Neue", "Helvetica", sans-serif;
     font-size: .8em;
     line-height: 1.5em;
     display: table-caption;
@@ -398,7 +398,7 @@ div.related-post-title {
 
 #comment-button {
     border: 1px solid #123;
-    font-family: "Avenir", "Nunito Sans", "Helvetica", sans-serif;
+    font-family: "Avenir", "Helvetica Neue", "Helvetica", sans-serif;
     text-align:center;
     padding: 1em;
     cursor: pointer;
