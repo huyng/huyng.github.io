@@ -7,7 +7,7 @@
     <url>
         <loc>https://everyhue.me/about/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
@@ -16,7 +16,7 @@
     <url>
         <loc>https://everyhue.me/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
@@ -25,7 +25,7 @@
     <url>
         <loc>https://everyhue.me/projects/bashmarks/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
@@ -34,7 +34,7 @@
     <url>
         <loc>https://everyhue.me/projects/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
@@ -45,84 +45,84 @@
     <url>
         <loc>https://everyhue.me/posts/why-uncertainty-matters/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
     <url>
         <loc>https://everyhue.me/posts/multiclass-calibration/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
     <url>
         <loc>https://everyhue.me/posts/similarity-search-101-with-vantage-point-trees/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
     <url>
         <loc>https://everyhue.me/posts/similarity-search-101-part-1/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
     <url>
         <loc>https://everyhue.me/posts/faster-numpy-dot-product/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
     <url>
         <loc>https://everyhue.me/posts/json-streaming-record-data-format/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
     <url>
         <loc>https://everyhue.me/posts/python-performance-analysis/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
     <url>
         <loc>https://everyhue.me/posts/my-tmux-setup/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
     <url>
         <loc>https://everyhue.me/posts/sane-color-scheme-for-matplotlib/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
     <url>
         <loc>https://everyhue.me/posts/dont-hash-your-secrets-heres-why-in-python/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
     <url>
         <loc>https://everyhue.me/posts/bashmarks-directory-bookmarks/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
     <url>
         <loc>https://everyhue.me/posts/toward-an-ergonomic-vim-setup/</loc>
         <lastmod>2020-02-12</lastmod>
-        <changefreq>daily</changefreq>
+        <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>
     
