@@ -2,9 +2,9 @@
 <html lang="en">
 
 <head>
-    <title>Don't Hash Your Secrets &laquo; Searching Gradients</title>
+    <title>Don&#39;t Hash Your Secrets &laquo; Searching Gradients</title>
 
-    <!-- meta data -->
+    
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 
@@ -12,13 +12,12 @@
     <meta name="description" content="Searching Gradients is a research blog focused on visual search, computer vision, and deep learning. Written by Huy Nguyen." />
     
 
-
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:site" content="@huyng" />
     <meta name="twitter:creator" content="@huyng" />
     <meta property="og:url" content="https://everyhue.me/posts/dont-hash-your-secrets-heres-why-in-python/" />
-    <meta property="og:title" content="Don't Hash Your Secrets" />
-    <meta property='og:site_name' content='Searching Gradients'/>
+    <meta property="og:title" content="Don&#39;t Hash Your Secrets" />
+    <meta property="og:site_name" content="Searching Gradients" />
 
     
 
@@ -26,16 +25,16 @@
     <link rel="alternate" type="application/rss+xml" href="https://everyhue.me/atom.xml" />
     <link rel="shortcut icon" href="/static/images/favicon.ico">
 
-    <!-- stylesheets -->
+    
     <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
     <link rel="stylesheet" href="/static/styles/monokai.css" type="text/css" media="screen" charset="utf-8">
     <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css" type="text/css" media="screen" charset="utf-8">
 
-    <!-- fonts -->
-    <link href="https://fonts.googleapis.com/css?family=Lora:400,700&display=swap" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
 
-    <!-- Global site tag (gtag.js) - Google Analytics -->
+    
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-140409395-3"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -48,7 +47,6 @@
 
 <body>
     <div class="container">
-
 
         <br>
         <div class="site-title"><a href="/">Searching Gradients</a></div>
@@ -80,17 +78,16 @@
     <hr>
     <div class="container">
         <div id="content-container">
-            <!-- POST -->
+            
 
-
-<!-- <div class="header-rule"></div> -->
 <div class="post content">
     
     <div class="post-date">
         01 Feb 2010 &nbsp; &ndash; &nbsp; <a style="color:#888" href="https://everyhue.me">Huy Nguyen</a>
     </div>
     <br>
-    <h2 class="post-title"><a href="/posts/dont-hash-your-secrets-heres-why-in-python/">Don't Hash Your Secrets</a></h2>
+    <h2 class="post-title"><a href="/posts/dont-hash-your-secrets-heres-why-in-python/">Don&#39;t Hash Your Secrets</a></h2>
+    
     <div class="post-content">
     <!-- End Meta -->
 <p>Ben Adida suggests that you <a href="http://benlog.com/articles/2008/06/19/dont-hash-secrets/">don't hash your secrets</a>.</p>
@@ -100,7 +97,10 @@
 <p>Not being a cryptography expert, I was blown away by his article. At the core of his post is the idea that given a hash digest of a <strong>message</strong>, one could compute the hash of <strong>message + appended_message</strong> without even knowing the original message. </p>
 <p>I had to see this for myself. Was it <em>that</em> easy to extend an MD5 or SHA1 hash?
 Below, you'll find working <a href="/media/3006/spoof_md5.py.txt">python code</a> and an explanation for spoofing signatures signed with the MD5 algroithm. </p>
-<!--more-->
+
+
+
+
 <h3>Implementation</h3>
 <p>To generate a hash from a message, algorithms like MD5 and SHA1 iterate through the message block by block. For each block, the algorithm runs a <a href="http://en.wikipedia.org/wiki/Cryptographic_hash_function#Merkle-Damg.C3.A5rd_construction">transformation function</a> where the input is a <strong>seed state</strong> and a <strong>message block</strong> . The output of this transformation is then fed back as the <strong>seed state</strong> for the transformation of the next message block (see the above diagram).</p>
 
@@ -181,7 +181,6 @@ Below, you'll find working <a href="/media/3006/spoof_md5.py.txt">python code</a
     <span class="k">assert</span> <span class="n">testSignature</span> <span class="o">==</span> <span class="n">spoofSignature</span>
 </pre></div>
 <p><strong> Information in this blog is meant for educational purposes only! </strong></p>
-
     </div>
 
     <br>
@@ -198,55 +197,45 @@ Below, you'll find working <a href="/media/3006/spoof_md5.py.txt">python code</a
     <br>
     <br>
 
-    <!-- related posts -->
-    
     <br> <br>
 
-<!-- </div> -->
+    <div class="post-content">
 
-
-
-<div class="post-content">
-
-
-    <div id="comments" style="display: none;">
-        <h3>Discussion</h3>
-
-        <!-- discussion -->
-        
-
-        <div id="disqus_thread"></div>
-        <script type="text/javascript">
-            var disqus_shortname = 'huyng';
-            var disqus_identifier = '512 http://www.huyng.com/?p=512';
-            var disqus_url = 'https://everyhue.me/posts/dont-hash-your-secrets-heres-why-in-python/';
+        <div id="comments" style="display: none;">
+            <h3>Discussion</h3>
 
             
-            var callDisqus = (function() {
-                var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-                dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
-                (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-            });
+            <div id="disqus_thread"></div>
+            <script type="text/javascript">
+                var disqus_shortname = 'huyng';
+                var disqus_identifier = '512 http:\/\/www.huyng.com\/?p=512';
+                var disqus_url = 'https:\/\/everyhue.me\/posts\/dont-hash-your-secrets-heres-why-in-python\/';
+
+                var callDisqus = (function() {
+                    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+                    dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+                    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+                });
+            </script>
+            <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
             
 
-        </script>
-        <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-        
+            
+            <br>
+            <br>
+        </div>
 
         
         <br>
-        <br>
-    </div>
+        <div id="comment-button">
+            Show or Add Comments
+        </div>
+        
 
-    
-    <br>
-    <div id="comment-button" >
-        Show or Add Comments
     </div>
-    
-
 </div>
-<!-- /POST -->
+
+
         </div>
         <div class="clear"></div>
         <br>
@@ -254,13 +243,19 @@ Below, you'll find working <a href="/media/3006/spoof_md5.py.txt">python code</a
     </div>
 
 
-    <!-- SCRIPTS -->
+    
     <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
     <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
     <script type="text/javascript">
         MathJax.Hub.Config({
             jax: ["input/TeX", "output/HTML-CSS"],
+            tex2jax: {
+                inlineMath: [['$$', '$$'], ['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
             displayAlign: "left",
             displayIndent: "1.2em",
             CommonHTML: {
@@ -276,30 +271,18 @@ Below, you'll find working <a href="/media/3006/spoof_md5.py.txt">python code</a
         $(document).ready(function () {
             $(".post-content p img, .post-content figure img")
                 .colorbox({
-                    // no transition
                     transition: "none",
-
-                    // use image src as href
                     href: function () {
                         return this.getAttribute('src');
                     },
-
                     title: function () {
                         return this.getAttribute('alt');
                     },
-
-                    // slightly dark bg
                     opacity: 1,
-
-                    // set max widths x height
                     scalePhotos: true,
                     maxWidth: "85%",
                     maxHeight: "80%",
-
-                    // make it so overlay is fixed
                     fixed: true,
-
-                    // group photos in posts
                     rel: "gallery"
                 });
             $('#comment-button').click(function() {
@@ -310,7 +293,6 @@ Below, you'll find working <a href="/media/3006/spoof_md5.py.txt">python code</a
         });
     </script>
 
-    <!-- page specific scripts -->
     
 
     

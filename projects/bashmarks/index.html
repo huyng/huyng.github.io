@@ -4,7 +4,7 @@
 <head>
     <title>Bashmarks - directory bookmarks for the shell &laquo; Searching Gradients</title>
 
-    <!-- meta data -->
+    
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 
@@ -12,13 +12,12 @@
     <meta name="description" content="Searching Gradients is a research blog focused on visual search, computer vision, and deep learning. Written by Huy Nguyen." />
     
 
-
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:site" content="@huyng" />
     <meta name="twitter:creator" content="@huyng" />
     <meta property="og:url" content="https://everyhue.me/projects/bashmarks/" />
     <meta property="og:title" content="Bashmarks - directory bookmarks for the shell" />
-    <meta property='og:site_name' content='Searching Gradients'/>
+    <meta property="og:site_name" content="Searching Gradients" />
 
     
 
@@ -26,16 +25,16 @@
     <link rel="alternate" type="application/rss+xml" href="https://everyhue.me/atom.xml" />
     <link rel="shortcut icon" href="/static/images/favicon.ico">
 
-    <!-- stylesheets -->
+    
     <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
     <link rel="stylesheet" href="/static/styles/monokai.css" type="text/css" media="screen" charset="utf-8">
     <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css" type="text/css" media="screen" charset="utf-8">
 
-    <!-- fonts -->
-    <link href="https://fonts.googleapis.com/css?family=Lora:400,700&display=swap" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
 
-    <!-- Global site tag (gtag.js) - Google Analytics -->
+    
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-140409395-3"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -48,7 +47,6 @@
 
 <body>
     <div class="container">
-
 
         <br>
         <div class="site-title"><a href="/">Searching Gradients</a></div>
@@ -80,52 +78,95 @@
     <hr>
     <div class="container">
         <div id="content-container">
-            <!-- <div class="header-rule"></div> -->
+            
 
-<div class="content">
+<div class="post content">
     
+    <div class="post-date">
+        01 Jan 0001 &nbsp; &ndash; &nbsp; <a style="color:#888" href="https://everyhue.me">Huy Nguyen</a>
+    </div>
+    <br>
     <h2 class="post-title"><a href="/projects/bashmarks/">Bashmarks - directory bookmarks for the shell</a></h2>
-    <div class="post-content modern">
-        <p>Bashmarks is a commandline utility that allows you to save and jump to commonly used directories.</p>
-
+    
+    <div class="toc">
+        <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#installation">installation</a></li>
+        <li><a href="#shell-commands">shell commands</a></li>
+        <li><a href="#example-usage">example usage</a></li>
+        <li><a href="#where-bashmarks-are-stored">where bashmarks are stored</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+    
+    <div class="post-content">
+    <p>Bashmarks is a commandline utility that allows you to save and jump to commonly used directories.</p>
 <p><a href="https://github.com/huyng/bashmarks">github repository</a></p>
-
 <h4 id="installation">installation</h4>
-
 <ol>
-  <li><code class="highlighter-rouge">git clone git://github.com/huyng/bashmarks.git</code></li>
-  <li><code class="highlighter-rouge">cd bashmarks &amp;&amp; make install</code></li>
-  <li>add <code class="highlighter-rouge">source ~/.local/bin/bashmarks.sh</code> from within your ~.bash_profile or ~/.bashrc file</li>
+<li><code>git clone git://github.com/huyng/bashmarks.git</code></li>
+<li><code>cd bashmarks &amp;&amp; make install</code></li>
+<li>add <code>source ~/.local/bin/bashmarks.sh</code> from within your ~.bash_profile or ~/.bashrc file</li>
 </ol>
-
 <h4 id="shell-commands">shell commands</h4>
-
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>s &lt;bookmark_name&gt; - Saves the current directory as "bookmark_name"
-g &lt;bookmark_name&gt; - Goes (cd) to the directory associated with "bookmark_name"
-p &lt;bookmark_name&gt; - Prints the directory associated with "bookmark_name"
+<pre><code>s &lt;bookmark_name&gt; - Saves the current directory as &quot;bookmark_name&quot;
+g &lt;bookmark_name&gt; - Goes (cd) to the directory associated with &quot;bookmark_name&quot;
+p &lt;bookmark_name&gt; - Prints the directory associated with &quot;bookmark_name&quot;
 d &lt;bookmark_name&gt; - Deletes the bookmark
 l                 - Lists all available bookmarks
-</code></pre></div></div>
-
+</code></pre>
 <h4 id="example-usage">example usage</h4>
-
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cd /var/www/
+<pre><code>$ cd /var/www/
 $ s webfolder
 $ cd /usr/local/lib/
 $ s locallib
 $ l
 $ g web&lt;tab&gt;
 $ g webfolder
-</code></pre></div></div>
-
+</code></pre>
 <h4 id="where-bashmarks-are-stored">where bashmarks are stored</h4>
+<p>All of your directory bookmarks are saved in a file called &ldquo;.sdirs&rdquo; in your HOME directory.</p>
 
-<p>All of your directory bookmarks are saved in a file called “.sdirs” in your HOME directory.</p>
+    </div>
+
+    <br>
+    <br>
+
+    <div class="pitch">
+        <div style="float:left; margin-right: 2em;">
+            <img style="border-radius: 50px;" src="/static/images/author.jpg" width=96 alt="">
+        </div>
+        Hey there! I'm Huy and I do research in computer vision, visual search, and AI. You can get updates on new essays by subscribing to my <a href="https://everyhue.me/atom.xml">rss feed</a>. Occassionally, I will send out interesting links on <a href="http://twitter.com/huyng">twitter</a> so follow me if you like this kind stuff.
+    </div>
+
+    <br>
+    <br>
+    <br>
+
+    <br> <br>
+
+    <div class="post-content">
+
+        <div id="comments" style="display: none;">
+            <h3>Discussion</h3>
+
+            
+
+            
+            <br>
+            <br>
+        </div>
+
+        
 
     </div>
 </div>
 
-<!-- /POST -->
+
         </div>
         <div class="clear"></div>
         <br>
@@ -133,13 +174,19 @@ $ g webfolder
     </div>
 
 
-    <!-- SCRIPTS -->
+    
     <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
     <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
     <script type="text/javascript">
         MathJax.Hub.Config({
             jax: ["input/TeX", "output/HTML-CSS"],
+            tex2jax: {
+                inlineMath: [['$$', '$$'], ['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
             displayAlign: "left",
             displayIndent: "1.2em",
             CommonHTML: {
@@ -155,30 +202,18 @@ $ g webfolder
         $(document).ready(function () {
             $(".post-content p img, .post-content figure img")
                 .colorbox({
-                    // no transition
                     transition: "none",
-
-                    // use image src as href
                     href: function () {
                         return this.getAttribute('src');
                     },
-
                     title: function () {
                         return this.getAttribute('alt');
                     },
-
-                    // slightly dark bg
                     opacity: 1,
-
-                    // set max widths x height
                     scalePhotos: true,
                     maxWidth: "85%",
                     maxHeight: "80%",
-
-                    // make it so overlay is fixed
                     fixed: true,
-
-                    // group photos in posts
                     rel: "gallery"
                 });
             $('#comment-button').click(function() {
@@ -189,7 +224,6 @@ $ g webfolder
         });
     </script>
 
-    <!-- page specific scripts -->
     
 
     

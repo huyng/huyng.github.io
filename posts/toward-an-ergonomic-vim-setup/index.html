@@ -4,7 +4,7 @@
 <head>
     <title>Toward an Ergonomic Vim Setup &laquo; Searching Gradients</title>
 
-    <!-- meta data -->
+    
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 
@@ -12,13 +12,12 @@
     <meta name="description" content="Searching Gradients is a research blog focused on visual search, computer vision, and deep learning. Written by Huy Nguyen." />
     
 
-
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:site" content="@huyng" />
     <meta name="twitter:creator" content="@huyng" />
     <meta property="og:url" content="https://everyhue.me/posts/toward-an-ergonomic-vim-setup/" />
     <meta property="og:title" content="Toward an Ergonomic Vim Setup" />
-    <meta property='og:site_name' content='Searching Gradients'/>
+    <meta property="og:site_name" content="Searching Gradients" />
 
     
 
@@ -26,16 +25,16 @@
     <link rel="alternate" type="application/rss+xml" href="https://everyhue.me/atom.xml" />
     <link rel="shortcut icon" href="/static/images/favicon.ico">
 
-    <!-- stylesheets -->
+    
     <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
     <link rel="stylesheet" href="/static/styles/monokai.css" type="text/css" media="screen" charset="utf-8">
     <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css" type="text/css" media="screen" charset="utf-8">
 
-    <!-- fonts -->
-    <link href="https://fonts.googleapis.com/css?family=Lora:400,700&display=swap" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
 
-    <!-- Global site tag (gtag.js) - Google Analytics -->
+    
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-140409395-3"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -48,7 +47,6 @@
 
 <body>
     <div class="container">
-
 
         <br>
         <div class="site-title"><a href="/">Searching Gradients</a></div>
@@ -80,10 +78,8 @@
     <hr>
     <div class="container">
         <div id="content-container">
-            <!-- POST -->
+            
 
-
-<!-- <div class="header-rule"></div> -->
 <div class="post content">
     
     <div class="post-date">
@@ -91,6 +87,7 @@
     </div>
     <br>
     <h2 class="post-title"><a href="/posts/toward-an-ergonomic-vim-setup/">Toward an Ergonomic Vim Setup</a></h2>
+    
     <div class="post-content">
     <span class="markdownOutput">
 <p>Here&#8217;s a brief tip: <strong>Rebind your ctrl key to capslock</strong>.</p>
@@ -114,55 +111,45 @@
     <br>
     <br>
 
-    <!-- related posts -->
-    
     <br> <br>
 
-<!-- </div> -->
+    <div class="post-content">
 
-
-
-<div class="post-content">
-
-
-    <div id="comments" style="display: none;">
-        <h3>Discussion</h3>
-
-        <!-- discussion -->
-        
-
-        <div id="disqus_thread"></div>
-        <script type="text/javascript">
-            var disqus_shortname = 'huyng';
-            var disqus_identifier = '408 http://www.huyng.com/?p=408';
-            var disqus_url = 'https://everyhue.me/posts/toward-an-ergonomic-vim-setup/';
+        <div id="comments" style="display: none;">
+            <h3>Discussion</h3>
 
             
-            var callDisqus = (function() {
-                var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-                dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
-                (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-            });
+            <div id="disqus_thread"></div>
+            <script type="text/javascript">
+                var disqus_shortname = 'huyng';
+                var disqus_identifier = '408 http:\/\/www.huyng.com\/?p=408';
+                var disqus_url = 'https:\/\/everyhue.me\/posts\/toward-an-ergonomic-vim-setup\/';
+
+                var callDisqus = (function() {
+                    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+                    dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+                    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+                });
+            </script>
+            <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
             
 
-        </script>
-        <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-        
+            
+            <br>
+            <br>
+        </div>
 
         
         <br>
-        <br>
-    </div>
+        <div id="comment-button">
+            Show or Add Comments
+        </div>
+        
 
-    
-    <br>
-    <div id="comment-button" >
-        Show or Add Comments
     </div>
-    
-
 </div>
-<!-- /POST -->
+
+
         </div>
         <div class="clear"></div>
         <br>
@@ -170,13 +157,19 @@
     </div>
 
 
-    <!-- SCRIPTS -->
+    
     <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
     <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
     <script type="text/javascript">
         MathJax.Hub.Config({
             jax: ["input/TeX", "output/HTML-CSS"],
+            tex2jax: {
+                inlineMath: [['$$', '$$'], ['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
             displayAlign: "left",
             displayIndent: "1.2em",
             CommonHTML: {
@@ -192,30 +185,18 @@
         $(document).ready(function () {
             $(".post-content p img, .post-content figure img")
                 .colorbox({
-                    // no transition
                     transition: "none",
-
-                    // use image src as href
                     href: function () {
                         return this.getAttribute('src');
                     },
-
                     title: function () {
                         return this.getAttribute('alt');
                     },
-
-                    // slightly dark bg
                     opacity: 1,
-
-                    // set max widths x height
                     scalePhotos: true,
                     maxWidth: "85%",
                     maxHeight: "80%",
-
-                    // make it so overlay is fixed
                     fixed: true,
-
-                    // group photos in posts
                     rel: "gallery"
                 });
             $('#comment-button').click(function() {
@@ -226,7 +207,6 @@
         });
     </script>
 
-    <!-- page specific scripts -->
     
 
     

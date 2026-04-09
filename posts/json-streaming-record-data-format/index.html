@@ -4,7 +4,7 @@
 <head>
     <title>The JSON Streaming Record (JSRec) data format &laquo; Searching Gradients</title>
 
-    <!-- meta data -->
+    
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 
@@ -12,13 +12,12 @@
     <meta name="description" content="Searching Gradients is a research blog focused on visual search, computer vision, and deep learning. Written by Huy Nguyen." />
     
 
-
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:site" content="@huyng" />
     <meta name="twitter:creator" content="@huyng" />
     <meta property="og:url" content="https://everyhue.me/posts/json-streaming-record-data-format/" />
     <meta property="og:title" content="The JSON Streaming Record (JSRec) data format" />
-    <meta property='og:site_name' content='Searching Gradients'/>
+    <meta property="og:site_name" content="Searching Gradients" />
 
     
 
@@ -26,16 +25,16 @@
     <link rel="alternate" type="application/rss+xml" href="https://everyhue.me/atom.xml" />
     <link rel="shortcut icon" href="/static/images/favicon.ico">
 
-    <!-- stylesheets -->
+    
     <link rel="stylesheet" href="/static/styles/base.css" type="text/css" media="screen" charset="utf-8">
     <link rel="stylesheet" href="/static/styles/monokai.css" type="text/css" media="screen" charset="utf-8">
     <link rel="stylesheet" href="/static/bower_components/colorbox/colorbox.css" type="text/css" media="screen" charset="utf-8">
 
-    <!-- fonts -->
-    <link href="https://fonts.googleapis.com/css?family=Lora:400,700&display=swap" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css" rel="stylesheet">
 
-    <!-- Global site tag (gtag.js) - Google Analytics -->
+    
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-140409395-3"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -48,7 +47,6 @@
 
 <body>
     <div class="container">
-
 
         <br>
         <div class="site-title"><a href="/">Searching Gradients</a></div>
@@ -80,10 +78,8 @@
     <hr>
     <div class="container">
         <div id="content-container">
-            <!-- POST -->
+            
 
-
-<!-- <div class="header-rule"></div> -->
 <div class="post content">
     
     <div class="post-date">
@@ -91,82 +87,76 @@
     </div>
     <br>
     <h2 class="post-title"><a href="/posts/json-streaming-record-data-format/">The JSON Streaming Record (JSRec) data format</a></h2>
+    
+    <div class="toc">
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#a-new-use-case-building-data-processing-pipelines-with-jsrec">A new use case: building data processing pipelines with JSRec</a></li>
+    <li><a href="#when-to-use-it">When to use it</a></li>
+  </ul>
+</nav>
+    </div>
+    
     <div class="post-content">
-    <p>I’m inventing a new data format (as blasphemous as it sounds).
-It’s flexible, human readable, easy to produce, and best of
- all, nearly impossible to screw up parsing.</p>
-
-<p>I’m doing it to replace CSV files because you shouldn’t have to
-worry about quoting, escaping, or deciding whether your “comma” sepearated
+    <p>I&rsquo;m inventing a new data format (as blasphemous as it sounds).
+It&rsquo;s flexible, human readable, easy to produce, and best of
+all, nearly impossible to screw up parsing.</p>
+<p>I&rsquo;m doing it to replace CSV files because you shouldn&rsquo;t have to
+worry about quoting, escaping, or deciding whether your &ldquo;comma&rdquo; sepearated
 values turn out to really mean semicolon or even worse, tab delimited.</p>
-
 <p>The new data format is called <strong>json streaming record</strong> or <strong>JSRec</strong> for short.
-While I say it’s “new”, I’m sure many of you have either produced or
+While I say it&rsquo;s &ldquo;new&rdquo;, I&rsquo;m sure many of you have either produced or
 consumed this type of data already at some point in your career.</p>
-
-<p>Here’s how it’s defined:</p>
-
+<p>Here&rsquo;s how it&rsquo;s defined:</p>
 <ol>
-  <li>Files of this format have <strong>.jsrec</strong> as their file extension</li>
-  <li>Each line in the file is a json hash map</li>
-  <li>Empty lines and lines beginning with ‘<strong>#</strong>’ are considred comments and ignored during parsing</li>
+<li>Files of this format have <strong>.jsrec</strong> as their file extension</li>
+<li>Each line in the file is a json hash map</li>
+<li>Empty lines and lines beginning with &lsquo;<strong>#</strong>&rsquo; are considred comments and ignored during parsing</li>
 </ol>
-
-<p>Here’s an example file foobar.jsrec</p>
-
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>{"foo":1, "bar": "marry"}
-{"foo":11, "bar": "had a"}
-{"foo":21, "bar": "little lamb"}
+<p>Here&rsquo;s an example file foobar.jsrec</p>
+<pre><code>{&quot;foo&quot;:1, &quot;bar&quot;: &quot;marry&quot;}
+{&quot;foo&quot;:11, &quot;bar&quot;: &quot;had a&quot;}
+{&quot;foo&quot;:21, &quot;bar&quot;: &quot;little lamb&quot;}
 
 # some comments
-{"foo":33, "bar": "more data"}
-</code></pre></div></div>
-
-<p>Here’s the code to parse and encode this data format:</p>
-
-<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">json</span>
-
-<span class="k">def</span> <span class="nf">load_jsrec</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
-    <span class="s">"""loads a .jsrec file"""</span>
-    <span class="n">fh</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">:</span>
-        <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">line</span> <span class="o">==</span> <span class="s">""</span><span class="p">:</span>
-            <span class="k">continue</span>
-        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">"#"</span><span class="p">):</span>
-            <span class="k">continue</span>
-        <span class="k">yield</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
-    <span class="n">fh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-
-<span class="k">def</span> <span class="nf">dump_jsrec</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">records</span><span class="p">):</span>
-    <span class="s">"""writes a .jsrec file"""</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
-            <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span> <span class="o">+</span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span></code></pre></figure>
-
-<h3 id="a-new-use-case-building-data-processing-pipelines-with-jsrec">A new use case: building data processing pipelines with JSRec</h3>
-
+{&quot;foo&quot;:33, &quot;bar&quot;: &quot;more data&quot;}
+</code></pre>
+<p>Here&rsquo;s the code to parse and encode this data format:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">json</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">load_jsrec</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;loads a .jsrec file&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">fh</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">line</span> <span class="o">==</span> <span class="s2">&#34;&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">continue</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&#34;#&#34;</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="k">continue</span>
+</span></span><span class="line"><span class="cl">        <span class="k">yield</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">fh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">dump_jsrec</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">records</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;writes a .jsrec file&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&#34;w&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span> <span class="o">+</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span></code></pre></div><h3 id="a-new-use-case-building-data-processing-pipelines-with-jsrec">A new use case: building data processing pipelines with JSRec</h3>
 <p>Because each line in a JSRec file contains all the information necessary
 to parse a record, you can use it to pipe output from one program to another:</p>
-
-<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cat foobar.jsrec | progA | progB
-</code></pre></div></div>
-
-<p>As long as the programs you’re using understands JSRec, you can start chaining
+<pre><code>cat foobar.jsrec | progA | progB
+</code></pre>
+<p>As long as the programs you&rsquo;re using understands JSRec, you can start chaining
 them together. This is HUGE because it makes building data processing pipelines
 on the commandline a modular and simple task.</p>
-
 <h3 id="when-to-use-it">When to use it</h3>
-
 <p>Json Streaming Record is an ideal replacement for CSV files. Use it when you want a
-data format that can store “streams” of records that are human readable yet easily
+data format that can store &ldquo;streams&rdquo; of records that are human readable yet easily
 parsed by a machine.</p>
-
 <p>With each line of the format being a completely self-contained JSON object, JSRec
 allows you to produce and consume data in an incremental fashion. I encourage you to start
-using it as a data format to pass around on the commandline for when you’re
+using it as a data format to pass around on the commandline for when you&rsquo;re
 building those data processing pipelines.</p>
-
 
     </div>
 
@@ -184,55 +174,45 @@ building those data processing pipelines.</p>
     <br>
     <br>
 
-    <!-- related posts -->
-    
     <br> <br>
 
-<!-- </div> -->
+    <div class="post-content">
 
-
-
-<div class="post-content">
-
-
-    <div id="comments" style="display: none;">
-        <h3>Discussion</h3>
-
-        <!-- discussion -->
-        
-
-        <div id="disqus_thread"></div>
-        <script type="text/javascript">
-            var disqus_shortname = 'huyng';
-            var disqus_identifier = 'http://www.huyng.com/posts/json-record-data-format/';
-            var disqus_url = 'https://everyhue.me/posts/json-streaming-record-data-format/';
+        <div id="comments" style="display: none;">
+            <h3>Discussion</h3>
 
             
-            var callDisqus = (function() {
-                var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-                dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
-                (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-            });
+            <div id="disqus_thread"></div>
+            <script type="text/javascript">
+                var disqus_shortname = 'huyng';
+                var disqus_identifier = 'http:\/\/www.huyng.com\/posts\/json-record-data-format\/';
+                var disqus_url = 'https:\/\/everyhue.me\/posts\/json-streaming-record-data-format\/';
+
+                var callDisqus = (function() {
+                    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+                    dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+                    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+                });
+            </script>
+            <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
             
 
-        </script>
-        <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-        
+            
+            <br>
+            <br>
+        </div>
 
         
         <br>
-        <br>
-    </div>
+        <div id="comment-button">
+            Show or Add Comments
+        </div>
+        
 
-    
-    <br>
-    <div id="comment-button" >
-        Show or Add Comments
     </div>
-    
-
 </div>
-<!-- /POST -->
+
+
         </div>
         <div class="clear"></div>
         <br>
@@ -240,13 +220,19 @@ building those data processing pipelines.</p>
     </div>
 
 
-    <!-- SCRIPTS -->
+    
     <script type="text/javascript" src="/static/bower_components/jquery/jquery.min.js"></script>
     <script type="text/javascript" src="/static/bower_components/colorbox/colorbox.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
     <script type="text/javascript">
         MathJax.Hub.Config({
             jax: ["input/TeX", "output/HTML-CSS"],
+            tex2jax: {
+                inlineMath: [['$$', '$$'], ['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
             displayAlign: "left",
             displayIndent: "1.2em",
             CommonHTML: {
@@ -262,30 +248,18 @@ building those data processing pipelines.</p>
         $(document).ready(function () {
             $(".post-content p img, .post-content figure img")
                 .colorbox({
-                    // no transition
                     transition: "none",
-
-                    // use image src as href
                     href: function () {
                         return this.getAttribute('src');
                     },
-
                     title: function () {
                         return this.getAttribute('alt');
                     },
-
-                    // slightly dark bg
                     opacity: 1,
-
-                    // set max widths x height
                     scalePhotos: true,
                     maxWidth: "85%",
                     maxHeight: "80%",
-
-                    // make it so overlay is fixed
                     fixed: true,
-
-                    // group photos in posts
                     rel: "gallery"
                 });
             $('#comment-button').click(function() {
@@ -296,7 +270,6 @@ building those data processing pipelines.</p>
         });
     </script>
 
-    <!-- page specific scripts -->
     
 
     
