@@ -4,7 +4,7 @@
  <title>Searching Gradients with Huy Nguyen</title>
  <link href="https://everyhue.me/atom.xml" rel="self"/>
  <link href="https://everyhue.me/"/>
- <updated>2026-04-09T01:22:57-07:00</updated>
+ <updated>2026-04-09T01:29:43-07:00</updated>
  <id>https://everyhue.me/</id>
  <author>
    <name>Huy Nguyen</name>
@@ -19,7 +19,7 @@
    
    <content type="html">&lt;p&gt;The Vietnamese Language has a rich and evolving history. For many years I have relied upon Hồ Ngọc Đức&amp;rsquo;s online Vietnamese Dictionary project as a reference for my studies as well as used it in various language processing tasks.&lt;/p&gt;
 &lt;p&gt;It saddened me to learn that his &lt;a href=&#34;https://web.archive.org/web/20200324090353/http://www.informatik.uni-leipzig.de/~duc/&#34;&gt;homepage&lt;/a&gt; at the &lt;a href=&#34;http://www.uni-leipzig.de/&#34;&gt;University of Leipzig&lt;/a&gt; was no longer being hosted. The project itself started in 1999 and has been publically accessible until 2024.&lt;/p&gt;
-&lt;p&gt;Given the importance of these dictionaries which were collated and produced during the early days of internet, I&amp;rsquo;ve decided to re-host these files for historical posterity.&lt;/p&gt;
+&lt;p&gt;Given the importance of these dictionaries which were collated and produced during the early days of the internet, I&amp;rsquo;ve decided to re-host these files for historical posterity.&lt;/p&gt;
 &lt;h3 id=&#34;the-dictionary-files&#34;&gt;The Dictionary Files&lt;/h3&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&#34;https://everyhue.me/media/3019/VietViet.zip&#34;&gt;Vietnamese-Vietnamese&lt;/a&gt;&lt;/li&gt;
@@ -37,7 +37,7 @@
 &lt;p&gt;All dictionary files follow the DICT protocol described in &lt;a href=&#34;https://datatracker.ietf.org/doc/html/rfc2229&#34;&gt;RFC 2229&lt;/a&gt;&lt;/p&gt;
 &lt;h3 id=&#34;acknowledgements&#34;&gt;Acknowledgements&lt;/h3&gt;
 &lt;p&gt;I would like to express much appreciation for Professor &lt;a href=&#34;https://web.archive.org/web/20210305205913/http://www.informatik.uni-leipzig.de/~duc/&#34;&gt;Hồ Ngọc Đưc&amp;rsquo;s&lt;/a&gt; work in this area. It constitutes a significant contribution to Vietnamese linguistic history in the modern era.&lt;/p&gt;
-&lt;img alt=&#34;Hồ Ngọc Đức&#34; src=&#34;https://web.archive.org/web/20200324090353im_/http://www.informatik.uni-leipzig.de/~duc/hnd2003b.jpg&#34; width=100 /&gt;
+&lt;img alt=&#34;Hồ Ngọc Đức&#34; src=&#34;https://everyhue.me/media/3019/hnd2003b.jpg&#34; width=100 /&gt;
 </content>
  </entry>
  
